@@ -22,9 +22,11 @@ MOLECULAR_MASS = {'air': 0.02896, # kg/mol
 MIXEDGAS_MOLECULAR_MASS = {
     "Helium" : (0.945 * MOLECULAR_MASS['helium'] +
                 0.055 * MOLECULAR_MASS['air']),
+    "gt96He" : (0.965 * MOLECULAR_MASS['helium'] +
+                0.035 * MOLECULAR_MASS['air']),
     "Hydrogen": (0.985 * MOLECULAR_MASS['hydrogen'] +
                 0.015 * MOLECULAR_MASS['air'])
-    }
+}
 
 
 def density(ambientPressMbar, gasMolecularMass,
