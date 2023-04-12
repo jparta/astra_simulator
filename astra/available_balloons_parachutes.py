@@ -5,8 +5,11 @@ This file contains key data of all the balloons currently supported by the
 simulator.
 
 Data in the available_baloons_parachutes.balloons dictionary is of the form:
-    "BALLOON ID" : (weight, nominal burst diameter,
+    "BALLOON ID" : (weight in kg, nominal burst diameter in meters,
                     Weibull lambda, Weibull k)
+Add new balloons by choosing Weibull lambda so that the mean of the distribution is proportional
+to the nominal burst diameter, taking into account the meanToNominalBurstRatio defined below.
+Test your equation against existing specifications to make sure it is correct.
 
 Data in the available_balloons_parachutes.parachutes dictionary is of the form:
     {"CHUTE ID" : A_ref}
