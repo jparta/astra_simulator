@@ -477,7 +477,7 @@ class targetFlight(flight):
         boundsDict : list
             The bounds of each parameter in the returned objective function,
             in the order they appear in the arguments of the objective.
-x
+
         See Also
         --------
         astra.target_landing.targetFlight.targetDistance()
