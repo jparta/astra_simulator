@@ -71,6 +71,10 @@ class flightProfile(object):
         The highest altitude reached by the flight. This could be the burst
         altitude, if bursting occurred, or the floating altitude if it didn't
     """
+    JSON_LAT_PRECISION = 5
+    JSON_LON_PRECISION = 5
+    JSON_ALT_PRECISION = 2
+
     def __init__(self,
                  launchDateTime,
                  nozzleLift,
@@ -102,20 +106,26 @@ class flightProfile(object):
     def getJsonPath(self):
         # Every how many points should we store one (this is used to
         # reduce the size of the json file)
-        shrinkFactor = 5
+        shrink_factor = 5
+
+        times = []
+        for seconds_since_launch in self.timeVector:
+            time = self.launchDateTime + timedelta(seconds=int(seconds_since_launch))
+            times.append(time)
 
         # Build up the flight path data
-        jsonPath = ['{ "points" : [\n']
-        jsonPoints = []
-        for pointNumber, eachPoint in enumerate(numpy.transpose([self.latitudeProfile, self.longitudeProfile, self.altitudeProfile])):
-            if pointNumber % shrinkFactor == 0:
-                jsonPoints.append('{ "lat" : %.5f, "lng" : %.5f, "alt" : %.5f }\n' % (
-                    numpy.clip(eachPoint[0], -85.0511, 85.0511), eachPoint[1], eachPoint[2]))
-
-        jsonPath.append(','.join(jsonPoints))
-        jsonPath.append('\n] }')
-
-        return jsonPath
+        point_dicts = []
+        points = numpy.transpose([times, self.latitudeProfile, self.longitudeProfile, self.altitudeProfile])
+        for i, (time, lat, lon, alt) in enumerate(points):
+            if i % shrink_factor == 0:
+                point_dict = {
+                    "time": time.isoformat(),
+                    "lat": round(lat, self.JSON_LAT_PRECISION),
+                    "lon": round(lon, self.JSON_LON_PRECISION),
+                    "alt": round(alt, self.JSON_ALT_PRECISION)
+                }
+                point_dicts.append(point_dict)
+        return point_dicts
 
     def getKMLPath(self):
         """
@@ -196,41 +206,47 @@ class flightProfile(object):
             # Build up the landing markers data
             flightHrs, flightMins, flightSecs = tools.prettySeconds(self.timeVector[-1])
             landTime = self.launchDateTime + timedelta(seconds=float(self.timeVector[-1]))
-            jsonLandingMarkers.append(
-                '{ "lat" : %.5f, "lng" : %.5f, "alt" : %.5f, "label" : "Payload Landing Site", "simNumber" : "%d", "otherData" : "Flight time: %d hours, %d mins and %d secs <br /> ETA: %s" }\n' % (
-                    self.latitudeProfile[-1], self.longitudeProfile[-1],
-                    self.altitudeProfile[-1], self.flightNumber, flightHrs, flightMins,
-                    flightSecs, landTime.strftime("%d/%m/%Y %H:%M:%S")))
-
+            landing_time_formatted = landTime.strftime("%d/%m/%Y %H:%M:%S")
+            landing_marker_data = {
+                "lat" : round(self.latitudeProfile[-1], self.JSON_LAT_PRECISION),
+                "lon" : round(self.longitudeProfile[-1], self.JSON_LON_PRECISION),
+                "alt" : round(self.altitudeProfile[-1], self.JSON_ALT_PRECISION),
+                "label" : "Payload Landing Site",
+                "simNumber" : self.flightNumber,
+                "otherData" : f"Flight time: {flightHrs} hours, {flightMins} mins and {flightSecs} secs\nETA: {landing_time_formatted}"
+            }
+            jsonLandingMarkers.append(landing_marker_data)
             # Build up the burst markers data
-            jsonBurstMarkers.append(
-                '{ "lat" : %.5f, "lng" : %.5f, "alt" : %.5f, "label" : "Balloon Burst", "simNumber" : "%d", "otherData" : "Burst altitude: %.0f m"  }\n' % (
-                    self.latitudeProfile[self.highestAltIndex],
-                    self.longitudeProfile[self.highestAltIndex],
-                    self.highestAltitude,
-                    self.flightNumber,
-                    self.highestAltitude))
+            burst_lat = self.latitudeProfile[self.highestAltIndex]
+            burst_lon = self.longitudeProfile[self.highestAltIndex]
+            burst_marker_data = {
+                "lat" : round(burst_lat, self.JSON_LAT_PRECISION),
+                "lon" : round(burst_lon, self.JSON_LON_PRECISION),
+                "alt" : round(self.highestAltitude, self.JSON_ALT_PRECISION),
+                "label" : "Balloon Burst",
+                "simNumber" : self.flightNumber,
+                "otherData" : f"Burst altitude: {int(self.highestAltitude)} m"
+            }
+            jsonBurstMarkers.append(burst_marker_data)
         else:
             # BALLOON HASN'T BURST DURING THIS SIMULATION
-
             # Build up the float markers data
             if self.highestAltIndex == -1:
                 # This is the case when the target altitude was not reached. Show an error to the user.
-                jsonFloatMarkers.append(
-                    '{ "lat" : %.5f, "lng" : %.5f, "alt" : %.5f, "label" : "Target Altitude NOT Reached", "simNumber" : "%d", "otherData" : "Max altitude: %.0f m <br />Try to increase the flight duration." }\n' % (
-                        self.latitudeProfile[self.highestAltIndex],
-                        self.longitudeProfile[self.highestAltIndex],
-                        self.highestAltitude,
-                        self.flightNumber,
-                        self.highestAltitude))
+                label = "Target Altitude NOT Reached"
+                otherData = f"Max altitude: {int(self.highestAltitude)} m\nTry to increase the flight duration."
             else:
-                jsonFloatMarkers.append(
-                    '{ "lat" : %.5f, "lng" : %.5f, "alt" : %.5f, "label" : "Target Altitude Reached", "simNumber" : "%d", "otherData" : "Target altitude: %.0f m" }\n' % (
-                        self.latitudeProfile[self.highestAltIndex],
-                        self.longitudeProfile[self.highestAltIndex],
-                        self.highestAltitude,
-                        self.flightNumber,
-                        self.highestAltitude))
+                label = "Target Altitude Reached"
+                otherData = f"Target altitude: {int(self.highestAltitude)} m"
+            float_marker_data = {
+                "lat" : round(self.latitudeProfile[self.highestAltIndex], self.JSON_LAT_PRECISION),
+                "lon" : round(self.longitudeProfile[self.highestAltIndex], self.JSON_LON_PRECISION),
+                "alt" : round(self.highestAltitude, self.JSON_ALT_PRECISION),
+                "label" : label,
+                "simNumber" : self.flightNumber,
+                "otherData" : otherData
+            }
+            jsonFloatMarkers.append(float_marker_data)
 
         return jsonBurstMarkers, jsonFloatMarkers, jsonLandingMarkers
 
@@ -1344,6 +1360,7 @@ class flight(object):
 
         return resultProfile, solution
 
+
     def write_JSON(self, filename):
         """
         """
@@ -1357,49 +1374,27 @@ class flight(object):
 
         # Go through the results of each flight simulation
         for profile in self.results:
-            thisFlightHasBurst = profile.hasBurst
-
             jsonPath = profile.getJsonPath()
-            jsonPaths.append(''.join(jsonPath))
+            jsonPaths.append(jsonPath)
 
             burstMarkers, floatMarkers, landingMarkers = profile.getJsonMarkers()
             jsonBurstMarkers.extend(burstMarkers)
-            jsonLandingMarkers.extend(burstMarkers)
-            jsonFloatMarkers.extend(burstMarkers)
+            jsonFloatMarkers.extend(floatMarkers)
+            jsonLandingMarkers.extend(landingMarkers)
 
+        path_data = {
+            "paths": jsonPaths,
+        }
+        if jsonBurstMarkers:
+            path_data["burstMarkers"] = jsonBurstMarkers
+        if jsonFloatMarkers:
+            path_data["floatMarkers"] = jsonFloatMarkers
+        if jsonLandingMarkers:
+            path_data["landingMarkers"] = jsonLandingMarkers
 
-        jsonPaths = ['"flightPaths" : [\n', ','.join(jsonPaths), ']']
+        with open(filename, 'w') as f:
+            json.dump(path_data, f)
 
-        # Put all the non-empty lists above together
-        if len(jsonBurstMarkers) != 0:
-            jsonBurstMarkers = ['"burstMarkers" : [\n', ','.join(jsonBurstMarkers), '],']
-
-        if len(jsonLandingMarkers) != 0:
-            jsonLandingMarkers = ['"landingMarkers" : [\n', ','.join(jsonLandingMarkers), '],']
-
-        if len(jsonFloatMarkers) != 0:
-            jsonFloatMarkers = ['"floatMarkers" : [\n', ','.join(jsonFloatMarkers), '],']
-
-        # Put them all together in one single array
-        jsonToAdd = [
-            '{',
-            ''.join(jsonBurstMarkers),
-            ''.join(jsonLandingMarkers),
-            ''.join(jsonFloatMarkers),
-            ''.join(jsonPaths),
-            '}'
-        ]
-
-        # Try to gain write permission on the output file specified upon configuration
-        try:
-            jsonFile = open(filename, 'w')
-        except IOError:
-            logger.error('Cannot create output file.')
-            return
-
-        # Write all the data to the file
-        jsonFile.write(''.join(jsonToAdd))
-        jsonFile.close()
 
     def write_KML(self, filename, zipped=False):
         """GENERATE KML OUT OF RESULTS
