@@ -14,17 +14,19 @@ Refer to the individual classes and subclasses for details on how to use them.
 University of Southampton
 Niccolo' Zapponi, nz1g10@soton.ac.uk, 22/04/2013
 """
-from datetime import timedelta
+import abc
 import logging
-from six.moves import range, builtins
+import os
+from datetime import timedelta
+
 import numpy
+from six.moves import range, builtins
 from scipy.interpolate import UnivariateSpline
+
 from . import wind_time_perturbation
-from. import wind_space_perturbation
+from . import wind_space_perturbation
 from . import global_tools as tools
 from . import GFS
-from types import MethodType
-import os
 
 
 # SETUP ERROR LOGGING AND DEBUGGING
