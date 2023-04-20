@@ -834,8 +834,8 @@ class flight(object):
         else:
             # Monte Carlo simulation: perturb values
             for _ in range(numberOfSimRuns):
-                mcIndex = numpy.random.random_integers(0, (
-                    numpy.size(drag_helium.transitions[:, 0])) - 1)
+                mcIndex = numpy.random.randint(0, (
+                    numpy.size(drag_helium.transitions[:, 0])))
                 self._lowCD.append(drag_helium.transitions[mcIndex, 0])
                 self._highCD.append(drag_helium.transitions[mcIndex, 1])
                 self._transition.append(drag_helium.transitions[mcIndex, 2])

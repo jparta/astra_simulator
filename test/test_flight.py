@@ -60,10 +60,10 @@ def kml_close_enough(kml_orig_filepath: str, kml_newer_filepath: str, max_relati
         return launch, landings
 
 
-    with open(kml_orig_filepath) as f:
+    with open(kml_orig_filepath, "rb") as f:
         kml_orig = kml.KML()
         kml_orig.from_string(f.read())
-    with open(kml_newer_filepath) as f:
+    with open(kml_newer_filepath, "rb") as f:
         kml_newer = kml.KML()
         kml_newer.from_string(f.read())
 

@@ -1,4 +1,5 @@
 # Needed to run tests
 fastkml >= 0.12
 geopy >= 2.3.0
+lxml >= 4.9.2
 pytest >= 7.3.1

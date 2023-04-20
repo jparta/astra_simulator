@@ -686,8 +686,8 @@ class soundingEnvironment(environment):
         # Apply perturbations to flights
         for _ in range(numberOfFlights):
             # Pick a random deviation out of the available ones.
-            devTime = numpy.random.random_integers(0, 1758)
-            devSpace = numpy.random.random_integers(0, 896)
+            devTime = numpy.random.randint(0, 1759)
+            devSpace = numpy.random.randint(0, 897)
             randChance = numpy.random.random(4)
 
             # Perturb and store
