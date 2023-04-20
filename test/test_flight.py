@@ -3,19 +3,20 @@
 # @Date:   2017-04-21 17:21:23
 # @Last Modified by:   p-chambers
 # @Last Modified time: 2017-06-22 15:01:12
+import os
 import pytest
 import re
-from datetime import datetime, timedelta
-from astra.weather import forecastEnvironment
-from astra import flight
-import astra
-from astra.GFS import GFS_Handler
 import tempfile
-import os
+from datetime import datetime, timedelta
 
-from geopy import distance as geopy_distance
 from fastkml import kml
+from geopy import distance as geopy_distance
 from pygeoif.geometry import Point
+
+import astra
+from astra import flight
+from astra.GFS import GFS_Handler
+from astra.weather import forecastEnvironment
 
 # Before importing numpy, disable multi-threading to ensure that the random
 # number generator is not accessed from multiple threads. This is necessary
