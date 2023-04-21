@@ -17,15 +17,16 @@ Niccolo' Zapponi, nz1g10@soton.ac.uk, 22/04/2013
 """
 import logging
 import numpy as np
-import os
-from astra.target_landing import targetFlight
 from datetime import datetime, timedelta
+from pathlib import Path
+
+from astra.target_landing import targetFlight
 
 logging.basicConfig(level=logging.DEBUG)
 
 
 if __name__ == "__main__":
-    from astra.simulator import *
+    from astra.target_landing import targetFlight
 
     np.random.seed(62)
 
@@ -57,8 +58,12 @@ if __name__ == "__main__":
                              debugging=True,
                              log_to_file=False,
                              progress_to_file=False,
-                             outputFile=os.path.join(''))
-
+                            )
+    
+    output_path = Path(__file__).parent
+    simulator.outputFile = output_path / 'astra_output_target_landing'
 
     # Run the simulation
-    bestProfile_bf, X, Y, distances = simulator.bruteForce()
+    Nx = 10
+    Ny = 10
+    bestProfile_bf, X, Y, distances = simulator.bruteForce(Nx=Nx, Ny=Ny, balloonModel=simulator.balloonModel)

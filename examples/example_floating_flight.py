@@ -1,7 +1,8 @@
 import logging
+from pathlib import Path
 logging.basicConfig(level=logging.DEBUG)
 from datetime import datetime, timedelta
-from astra.simulator import *
+from astra.simulator import forecastEnvironment, flight
 
 
 if __name__ == "__main__":
@@ -13,6 +14,7 @@ if __name__ == "__main__":
                                          launchSiteLon=-81.0228,     # deg
                                          launchSiteElev=4,           # m
                                          dateAndTime=launch_datetime,
+                                         UTC_offset=-4,
                                          forceNonHD=True,
                                          debugging=True)
 
@@ -34,12 +36,13 @@ if __name__ == "__main__":
                        floatingFlight=True,
                        floatingAltitude=30000,                      # m
                        excessPressureCoeff=1,
-                       outputFile=os.path.join('.', 'astra_output_floating'),
                        debugging=True,
                        log_to_file=True,
                        floatDuration=30*60,  #seconds
                        cutdownTimeout=3*3600)
 
+    output_path = Path(__file__).parent
+    simFlight.outputFile = output_path / 'astra_output_floating'
 
     #simFlight.maxFlightTime = 5*60*60
 

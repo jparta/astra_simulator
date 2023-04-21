@@ -11,12 +11,13 @@ University of Southampton
 Niccolo' Zapponi, nz1g10@soton.ac.uk, 22/04/2013
 """
 import logging
+from pathlib import Path
 import numpy as np
 logging.basicConfig(level=logging.DEBUG)
 
 if __name__ == "__main__":
     from datetime import datetime, timedelta
-    from astra.simulator import *
+    from astra.simulator import forecastEnvironment, flight
 
     np.random.seed(62)
 
@@ -28,6 +29,7 @@ if __name__ == "__main__":
                                          launchSiteLon=-81.0228,     # deg
                                          launchSiteElev=4,           # m
                                          dateAndTime=launch_datetime,
+                                         UTC_offset=-4,
                                          forceNonHD=True,
                                          debugging=True)
 
@@ -42,9 +44,11 @@ if __name__ == "__main__":
                        trainEquivSphereDiam=0.1,                    # m
                        floatingFlight=False,
                        excessPressureCoeff=1,
-                       outputFile=os.path.join('.', 'astra_output'),
                        debugging=True,
                        log_to_file=True)
+    
+    output_path = Path(__file__).parent
+    simFlight.outputFile = output_path / 'astra_output_forecast'
 
     # simFlight.maxFlightTime = 5*60*60
 

@@ -6,12 +6,12 @@ ASTRA High Altitude Balloon Flight Planner
 University of Southampton
 """
 from datetime import datetime
-from astra.simulator import *
+from pathlib import Path
+from astra.simulator import soundingEnvironment, flight
 
 
 if __name__ == "__main__":
-    soundingFile = os.path.join(os.path.dirname(__file__), 'sp.sounding')
-
+    soundingFile = Path(__file__).parent / 'sp.sounding'
 
     simEnvironment = soundingEnvironment(launchSiteLat=50.2245,         # deg
                                          launchSiteLon=-5.3069,         # deg
@@ -20,6 +20,7 @@ if __name__ == "__main__":
                                          timeFromSounding=3,            # hours
                                          inflationTemperature=10.5,     # degC
                                          dateAndTime=datetime.now(),
+                                         UTC_offset=0,
                                          soundingFile=soundingFile,
                                          debugging=True)
     # TODO: Add an example sounding file, with description of how to create one
@@ -37,9 +38,11 @@ if __name__ == "__main__":
                        floatingFlight=False,
                        floatingAltitude=30000,                      # m
                        excessPressureCoeff=1,
-                       outputFile=os.path.join('.', 'astra_output_sounding'),
                        debugging=True,
                        log_to_file=True)
+    
+    output_path = Path(__file__).parent
+    simFlight.outputFile = output_path / 'astra_output_sounding'
 
     # Run the simulation
     simFlight.run()
