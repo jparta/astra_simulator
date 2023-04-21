@@ -96,7 +96,7 @@ class environment(object):
                  launchSiteElev,
                  dateAndTime,
                  inflationTemperature=0.0,
-                 UTC_offset=0.0,
+                 UTC_offset=None,
                  debugging=False,
                  load_on_init=False):
 
@@ -244,7 +244,7 @@ class soundingEnvironment(environment):
                  timeFromSounding,
                  distanceFromSounding,
                  inflationTemperature=0.0,
-                 UTC_offset=0.,
+                 UTC_offset=None,
                  debugging=False,
                  load_on_init=False):
         """Initialize the soundingEnvironment object.
@@ -297,9 +297,12 @@ class soundingEnvironment(environment):
             def progressHandler(*args):
                 return None
 
-        if self.UTC_offset == 0:
-            self.UTC_offset = tools.getUTCOffset(self.launchSiteLat,
+        if self.UTC_offset is None:
+            fetched_offset = tools.getUTCOffset(self.launchSiteLat,
                 self.launchSiteLon,self.dateAndTime)
+            if fetched_offset is None:
+                raise ValueError('Could not fetch time zone data about the launch site. Please set the UTC offset manually.')
+            self.UTC_offset = fetched_offset
             logger.debug('Fetched time zone data about the launch site: UTC offset is %f hours' % self.UTC_offset)
 
         self._UTC_time = self.dateAndTime - timedelta(seconds=self.UTC_offset * 3600)
@@ -777,7 +780,7 @@ class forecastEnvironment(environment):
                  launchSiteLon,
                  launchSiteElev,
                  dateAndTime,
-                 UTC_offset=0,
+                 UTC_offset=None,
                  inflationTemperature=0.0,
                  forceNonHD=False,
                  forecastDuration=4,
@@ -844,9 +847,12 @@ class forecastEnvironment(environment):
             raise ValueError(
                 'The flight date and time has not been set and is required!')
 
-        if self.UTC_offset == 0:
-            self.UTC_offset = tools.getUTCOffset(
+        if self.UTC_offset == None:
+            fetched_offset = tools.getUTCOffset(
                 self.launchSiteLat,self.launchSiteLon,self.dateAndTime)
+            if fetched_offset is None:
+                raise ValueError('Could not fetch time zone data about the launch site. Please set the UTC offset manually.')
+            self.UTC_offset = fetched_offset
             logger.debug('Fetched time zone data about the launch site: UTC offset is %f hours' % self.UTC_offset)
 
         self._UTC_time = self.dateAndTime - timedelta(seconds=self.UTC_offset * 3600)
@@ -944,9 +950,12 @@ class forecastEnvironment(environment):
             logger.warning(
                 'The weather was already loaded. All data will be overwritten.')
 
-        if self.UTC_offset == 0:
-            self.UTC_offset = tools.getUTCOffset(
+        if self.UTC_offset == None:
+            fetched_offset = tools.getUTCOffset(
                 self.launchSiteLat,self.launchSiteLon,self.dateAndTime)
+            if fetched_offset is None:
+                raise ValueError('Could not fetch time zone data about the launch site. Please set the UTC offset manually.')
+            self.UTC_offset = fetched_offset
             logger.debug('Fetched time zone data about the launch site: UTC offset is %f hours' % self.UTC_offset)
 
         self._UTC_time = self.dateAndTime - timedelta(seconds=self.UTC_offset * 3600)

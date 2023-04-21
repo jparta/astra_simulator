@@ -25,6 +25,7 @@ def test_soundingEnvironment():
                                          timeFromSounding=3,            # hours
                                          inflationTemperature=10.5,     # degC
                                          dateAndTime=datetime.now(),
+                                         UTC_offset=0,
                                          soundingFile=soundingFile,
                                          debugging=True)
 

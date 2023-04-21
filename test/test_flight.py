@@ -141,6 +141,7 @@ def test_forecast_example_inputs():
                                          launchSiteLon=-81.0228,     # deg
                                          launchSiteElev=4,           # m
                                          dateAndTime=launch_datetime,
+                                         UTC_offset=-4,
                                          forceNonHD=True,
                                          debugging=True)
 
