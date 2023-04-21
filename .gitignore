@@ -1,12 +1,21 @@
-*astra.egg-info/
+# Python
 *.pyc
-.ipynb_checkpoints
-*/dist/
-build/
+
+# OS-specific
 *.DS_Store
-*.cache
-simulator/examples/astra_output*
+
+# This program's outputs
+examples/astra_output*/
+*.log
 *_progress.json
+
+# Other programs' outputs
+build/
+.ipynb_checkpoints
+*astra.egg-info/
+
+# Misc
+*/dist/
+*.cache
 *.dat
 *.lprof
-*.log
