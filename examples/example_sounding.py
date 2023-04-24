@@ -26,6 +26,9 @@ if __name__ == "__main__":
     # TODO: Add an example sounding file, with description of how to create one
     # simEnvironment.load()
 
+    output_path = Path(__file__).parent / 'outputs'
+    outputPath = output_path / 'astra_output_sounding'
+
     # Launch setup
     simFlight = flight(environment=simEnvironment,
                        balloonGasType='Helium',
@@ -38,11 +41,9 @@ if __name__ == "__main__":
                        floatingFlight=False,
                        floatingAltitude=30000,                      # m
                        excessPressureCoeff=1,
+                       outputPath=outputPath,
                        debugging=True,
                        log_to_file=True)
-    
-    output_path = Path(__file__).parent
-    simFlight.outputFile = output_path / 'astra_output_sounding'
 
     # Run the simulation
     simFlight.run()

@@ -27,6 +27,10 @@ if __name__ == "__main__":
         "debugging": True,
     }
 
+    # Output directory in this directory
+    output_path = Path(__file__).parent / 'outputs'
+    outputPath = output_path / 'astra_output_cutdown'
+
     # Flight parameters
     flight_params = {
         'balloonGasType': 'Helium',
@@ -39,9 +43,11 @@ if __name__ == "__main__":
         'cutdown': True,
         'cutdownAltitude': 14000,
         'excessPressureCoeff': 1,
+        'outputFile': outputPath,
         'debugging': True,
         'log_to_file': False,
     }
+
     # Now, let's create a new environment object with the parameters we just read in.
     simEnvironment = forecastEnvironment(**environment_params)
 
@@ -52,10 +58,6 @@ if __name__ == "__main__":
     # However, if you'd like to download it in advance, uncomment the following line.
     # The flight object will automatically detect it and won't download the forecast twice.
     # simEnvironment.loadForecast()
-
-    # Output directory in this directory
-    output_path = Path(__file__).parent
-    simFlight.outputFile = output_path / 'astra_output_cutdown'
 
     # Run the simulation
     simFlight.run()

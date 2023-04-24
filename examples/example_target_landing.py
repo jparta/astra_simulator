@@ -59,9 +59,6 @@ if __name__ == "__main__":
                              log_to_file=False,
                              progress_to_file=False,
                             )
-    
-    output_path = Path(__file__).parent
-    simulator.outputFile = output_path / 'astra_output_target_landing'
 
     # Run the simulation
     Nx = 10

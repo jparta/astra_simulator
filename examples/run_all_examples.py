@@ -2,10 +2,8 @@
 import os
 from pathlib import Path
 
-
 if __name__ == "__main__":
     containing_dir = Path(__file__).parent
-    containing_dir = containing_dir.relative_to(containing_dir.parent)
     script_logs = containing_dir / "logs"
     script_logs.mkdir(exist_ok=True)
 

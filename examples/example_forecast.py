@@ -33,6 +33,9 @@ if __name__ == "__main__":
                                          forceNonHD=True,
                                          debugging=True)
 
+    output_path = Path(__file__).parent / 'outputs'
+    outputPath = output_path / 'astra_output_forecast'
+
     # Launch setup
     simFlight = flight(environment=simEnvironment,
                        balloonGasType='Helium',
@@ -44,11 +47,10 @@ if __name__ == "__main__":
                        trainEquivSphereDiam=0.1,                    # m
                        floatingFlight=False,
                        excessPressureCoeff=1,
+                       outputPath=outputPath,
                        debugging=True,
                        log_to_file=True)
-    
-    output_path = Path(__file__).parent
-    simFlight.outputFile = output_path / 'astra_output_forecast'
+
 
     # simFlight.maxFlightTime = 5*60*60
 

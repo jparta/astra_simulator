@@ -11,6 +11,7 @@ for usage.
 University of Southampton
 """
 from math import pi
+from pathlib import Path
 from datetime import timedelta
 from sys import stdout
 import os
@@ -420,7 +421,7 @@ class flight(object):
                  cutdown=False,
                  cutdownAltitude=numpy.inf,
                  cutdownTimeout=numpy.inf,
-                 outputFile='',
+                 outputPath: str | Path='',
                  debugging=False,
                  log_to_file=False,
                  progress_to_file=False):
@@ -434,6 +435,9 @@ class flight(object):
         else:
             log_lev = logging.WARNING
 
+        if outputPath:
+            Path(outputPath).mkdir(parents=True, exist_ok=True)
+
         if log_to_file:
             # Reset the app logger handlers and reset basic config
             # file handler (this may not be the best way to do this for all
@@ -443,8 +447,9 @@ class flight(object):
             for handler in logging.root.handlers[:]:
                 logging.root.removeHandler(handler)
 
+            log_file = Path(outputPath) / 'astra_py_error_debug.log'
             # Set a maximum log file size of 5MB:
-            handler = logging.handlers.RotatingFileHandler('astra_py_error.log',
+            handler = logging.handlers.RotatingFileHandler(log_file,
                 mode='a',
                 maxBytes=10*1024*1024)
             formatter = logging.Formatter('%(asctime)s.%(msecs)d %(levelname)s:%(name)s %(message)s')
@@ -462,7 +467,7 @@ class flight(object):
 
         self._progressToFile = progress_to_file
         self._debugging = debugging
-        self.outputFile = outputFile
+        self.outputPath = outputPath
 
         # User defined variables
         # Note: As setters are used in some of these variables, there is a
@@ -690,17 +695,17 @@ class flight(object):
         self._numberOfSimRuns = new_numberOfSimRuns
 
     @property
-    def outputFile(self):
+    def outputPath(self):
         """output file property
 
         Setting this value will attempt to create the input filename, before
         deleting it instantly. This value will later be used after a run
         to write all results to file.
         """
-        return self._outputFile
+        return self._outputPath
     
-    @outputFile.setter
-    def outputFile(self, new_outputFile):
+    @outputPath.setter
+    def outputPath(self, new_outputFile):
         if new_outputFile:
             try:
                 out = open(new_outputFile, 'w')
@@ -713,7 +718,8 @@ class flight(object):
         # Prepare progress file: try and create the file
         self._progressFile = os.path.splitext(new_outputFile)[0] +\
             '_progress.json'
-        self._outputFile = new_outputFile
+        logger.info(f"Handling progress file {self._progressFile}", stack_info=True)
+        self._outputPath = new_outputFile
     
     # ----------------------------------------------------------------------
     def reset(self, keepParameters=False):
@@ -1556,7 +1562,7 @@ class flight(object):
             zipCsv.close()
             outputCsv.close()
 
-            logger.debug(('CSV-ZIP file generated! ', self.outputFile))
+            logger.debug(('CSV-ZIP file generated! ', self.outputPath))
 
     def write(self, filename):
         """
@@ -1635,15 +1641,15 @@ class flight(object):
         --------
         astra.simulator.flight, self.outputFile
         """
-        baseName, data_format = os.path.splitext(self.outputFile)
+        baseName, data_format = os.path.splitext(self.outputPath)
 
         if data_format == '':
             # In the case that no extension is provided, use the base name as
             # the folder name as write all types to this file
             try:
-                os.mkdir(self.outputFile)
+                os.mkdir(self.outputPath)
             except OSError:
-                if not os.path.isdir(self.outputFile):
+                if not os.path.isdir(self.outputPath):
                     logger.error('The specified output path already exists. Change it or add an extension.')
 
             for data_format in ['json', 'kml', 'kmz', 'csv', 'csv.zip']:
@@ -1666,7 +1672,7 @@ class flight(object):
 
         else:
             # Only store the required one
-            self.write(self.outputFile)
+            self.write(self.outputPath)
 
     def updateProgress(self, value, action):
         """

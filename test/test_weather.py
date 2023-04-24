@@ -47,7 +47,7 @@ def test_soundingEnvironment():
                        numberOfSimRuns=2,
                        trainEquivSphereDiam=0.1,                    # m
                        excessPressureCoeff=1,
-                       outputFile=output_dir,
+                       outputPath=output_dir,
                        debugging=True,
                        log_to_file=True)
 

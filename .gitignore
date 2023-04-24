@@ -5,9 +5,8 @@
 *.DS_Store
 
 # This program's outputs
-examples/astra_output*/
+examples/outputs/
 *.log
-*_progress.json
 
 # Other programs' outputs
 build/
