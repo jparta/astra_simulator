@@ -5,14 +5,12 @@
 # @Last Modified time: 2017-05-18 18:15:48
 from pathlib import Path
 
-
 if __name__ == "__main__":
-    from datetime import datetime, timedelta
-    import sys
     import os
+    import sys
+    from datetime import datetime, timedelta
     sys.path.append(os.path.abspath('../astra'))
-    from astra.simulator import forecastEnvironment, flight
-
+    from astra.simulator import flight, forecastEnvironment
 
     # Environment parameters
     # Launch site: Daytona Beach, FL

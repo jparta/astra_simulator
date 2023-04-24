@@ -16,17 +16,14 @@ University of Southampton
 Niccolo' Zapponi, nz1g10@soton.ac.uk, 22/04/2013
 """
 import logging
-import numpy as np
 from datetime import datetime, timedelta
-from pathlib import Path
+
+import numpy as np
 
 from astra.target_landing import targetFlight
 
-logging.basicConfig(level=logging.DEBUG)
-
-
 if __name__ == "__main__":
-    from astra.target_landing import targetFlight
+    logging.basicConfig(level=logging.DEBUG)
 
     np.random.seed(62)
 

@@ -21,7 +21,8 @@ Niccolo' Zapponi, nz1g10@soton.ac.uk, 22/04/2013
 
 __author__ = "Niccolo' Zapponi, University of Southampton, nz1g10@soton.ac.uk"
 
-from math import floor, ceil
+from math import ceil, floor
+
 import numpy
 from six.moves import builtins
 

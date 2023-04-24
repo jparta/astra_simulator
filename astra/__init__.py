@@ -6,14 +6,11 @@
 __all__ = ["flight_tools", "global_tools", "interpolate", "sim_manager",
             "simulator", "weather", "target_landing"]
 
-from . import simulator
-from . import weather
-from . import target_landing
+import logging
 
+from . import simulator, target_landing, weather
 from .simulator import flight
 
-
-import logging
 try:  # Python 2.7+
     from logging import NullHandler
 except ImportError:

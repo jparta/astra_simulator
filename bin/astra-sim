@@ -8,11 +8,13 @@ Type python sim_manager.py --help to see the documentation.
 
 University of Southampton
 """
-from datetime import datetime
 import argparse
+from datetime import datetime
 
-from astra.simulator import *
 import numpy as np
+
+from astra.simulator import flight
+from astra.weather import forecastEnvironment, soundingEnvironment
 
 parser = argparse.ArgumentParser(description="""Process inputs to the ASTRA high
     altitude balloon flight planner for simulation""")
@@ -147,7 +149,7 @@ def main():
                        floatDuration=args.floatDuration,
                        cutdownAltitude=args.cutdownAltitude,
                        excessPressureCoeff=1,
-                       outputFile=args.o,
+                       outputPath=args.o,
                        debugging=args.debug,
                        log_to_file=True,
                        progress_to_file=True)

@@ -3,8 +3,9 @@
 # @Date:   2016-11-17 17:34:50
 # @Last Modified by:   p-chambers
 # @Last Modified time: 2017-06-29 12:22:12
-from setuptools import setup, find_packages
 import subprocess
+
+from setuptools import find_packages, setup
 
 # Versioning note: I didn't use scm_tools here as I wanted the release to be
 # exactly equal to the latest git tag (releasing a new tag updates the version,

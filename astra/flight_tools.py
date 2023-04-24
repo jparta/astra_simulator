@@ -9,8 +9,8 @@ diameter and drag.
 University of Southampton
 """
 from math import pi
-import numpy as np
 
+import numpy as np
 
 # Constants
 MOLECULAR_MASS = {'air': 0.02896, # kg/mol

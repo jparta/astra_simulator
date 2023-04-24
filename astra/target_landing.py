@@ -11,34 +11,32 @@ See examples/notebooks/example_targetlanding.ipynb for usage.
 
 University of Southampton
 """
-from .simulator import flight, flightProfile
-from .weather import forecastEnvironment
-from .available_balloons_parachutes import balloons
-
-from datetime import datetime, timedelta
+import functools
+import inspect
+import itertools
 import logging
 import operator
-import numpy as np
-import scipy.optimize as opt
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+import random
 from bisect import bisect_right
 from copy import deepcopy
+from datetime import datetime, timedelta
 from operator import eq
-import functools
-from . import global_tools as tools
-from .flight_tools import nozzleLiftFixedAscent, liftingGasMass
+
 import matplotlib.dates as mdates
-import inspect
-from deap import tools as dptools
-from deap import creator
-from deap import base
-from deap import algorithms
+import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import matplotlib.tri as mtri
-import itertools
-import random
-import functools
+import numpy as np
+import scipy.optimize as opt
+from deap import algorithms, base, creator
+from deap import tools as dptools
+from mpl_toolkits.mplot3d import Axes3D
+
+from . import global_tools as tools
+from .available_balloons_parachutes import balloons
+from .flight_tools import liftingGasMass, nozzleLiftFixedAscent
+from .simulator import flight, flightProfile
+from .weather import forecastEnvironment
 
 
 # Helper functions for deap

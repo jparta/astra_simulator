@@ -1,14 +1,15 @@
 import logging
-from pathlib import Path
-logging.basicConfig(level=logging.DEBUG)
 from datetime import datetime, timedelta
-from astra.simulator import forecastEnvironment, flight
+from pathlib import Path
 
+from astra.simulator import flight, forecastEnvironment
 
 if __name__ == "__main__":
     # Environment parameters
     # Launch site: Daytona Beach, FL
     #        time: tomorrow, this time
+    logging.basicConfig(level=logging.DEBUG)
+
     launch_datetime = datetime.now() + timedelta(days=1)
     simEnvironment = forecastEnvironment(launchSiteLat=29.2108,      # deg
                                          launchSiteLon=-81.0228,     # deg

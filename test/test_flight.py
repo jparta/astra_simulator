@@ -4,11 +4,11 @@
 # @Last Modified by:   p-chambers
 # @Last Modified time: 2017-06-22 15:01:12
 import os
-import pytest
 import re
 import tempfile
 from datetime import datetime, timedelta
 
+import pytest
 from fastkml import kml
 from geopy import distance as geopy_distance
 from pygeoif.geometry import Point

@@ -7,9 +7,9 @@ University of Southampton
 """
 from datetime import datetime
 from pathlib import Path
+
 from astra.simulator import flight
 from astra.weather import soundingEnvironment
-
 
 if __name__ == "__main__":
     soundingFile = Path(__file__).parent / 'sp.sounding'

@@ -4,10 +4,10 @@
 These tools generally perform basic unit conversions, provide simple data and
 analyze lists.
 """
-from math import sqrt, exp, sin, cos, radians, atan, tan, pi, asin, sqrt
-import numpy as np
 import logging
+from math import asin, atan, cos, exp, pi, radians, sin, sqrt, tan
 
+import numpy as np
 
 logger = logging.getLogger(__name__)
 

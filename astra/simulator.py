@@ -10,22 +10,23 @@ for usage.
 
 University of Southampton
 """
-from math import pi
-from pathlib import Path
-from datetime import timedelta
-from sys import stdout
-import os
+import json
 import logging
 import logging.handlers
-from six.moves import range, builtins
+import os
+from datetime import timedelta
+from math import pi
+from pathlib import Path
+from sys import stdout
+
 import numpy
 from scipy.integrate import odeint
+from six.moves import builtins, range
+
+from . import available_balloons_parachutes, drag_helium
 from . import flight_tools as ft
-from .weather import forecastEnvironment
 from . import global_tools as tools
-from . import drag_helium
-from . import available_balloons_parachutes
-import json
+from .weather import forecastEnvironment
 
 # Pass through the @profile decorator if line profiler (kernprof) is not in use
 try:
@@ -1433,7 +1434,8 @@ class flight(object):
         ]
 
         if zipped:
-            import zipfile, tempfile
+            import tempfile
+            import zipfile
 
             try:
                 outputKml = tempfile.NamedTemporaryFile(mode='w')
@@ -1533,7 +1535,8 @@ class flight(object):
             numpy.savetxt(filename, csvMatrix, delimiter=',', fmt='%s')
 
         else:
-            import zipfile, tempfile
+            import tempfile
+            import zipfile
 
             try:
                 outputCsv = tempfile.NamedTemporaryFile()

@@ -3,12 +3,14 @@
 # @Date:   2017-04-25 12:40:25
 # @Last Modified by:   p-chambers
 # @Last Modified time: 2017-04-25 16:28:06
-from astra.weather import soundingEnvironment
-from astra import flight
 import os
 import tempfile
 from datetime import datetime, timedelta
+
 import astra
+from astra import flight
+from astra.weather import soundingEnvironment
+
 
 def test_soundingEnvironment():
     """This roughly runs the sounding example and performs some primitive
