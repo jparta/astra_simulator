@@ -21,8 +21,7 @@ if __name__ == "__main__":
         "launchSiteLat": 29.2108,
         "launchSiteLon": -81.0228,
         "launchSiteElev": 4,
-        "dateAndTime": datetime.now() + timedelta(days=1),
-        "UTC_offset": -4,
+        "launchTime": datetime.now() + timedelta(days=1),
         "forceNonHD": True,
         "debugging": True,
     }
@@ -43,7 +42,7 @@ if __name__ == "__main__":
         'cutdown': True,
         'cutdownAltitude': 14000,
         'excessPressureCoeff': 1,
-        'outputFile': outputPath,
+        'outputPath': outputPath,
         'debugging': True,
         'log_to_file': False,
     }

@@ -4,12 +4,9 @@
 These tools generally perform basic unit conversions, provide simple data and
 analyze lists.
 """
-from math import sqrt, exp, sin, cos, radians, atan, atan2, tan, pi, asin, sqrt
+from math import sqrt, exp, sin, cos, radians, atan, tan, pi, asin, sqrt
 import numpy as np
 import logging
-from six.moves.urllib.request import urlopen
-import time
-import json
 
 
 logger = logging.getLogger(__name__)
@@ -216,43 +213,6 @@ def find_nearest_index(array, value):
     """
 
     return np.abs(array - value).argmin()
-
-
-def getUTCOffset(latitude, longitude, date_time):
-    """Use the Google Maps API Time Zone service to obtain UTC offset
-    information about the given location.
- 
-    Parameters
-    ----------
-    latitude : scalar
-        latitude of the location
-    longitude : scalar
-        longitude of the location
-    date_time : :obj:`datetime.datetime`   
-    Returns
-    -------
-    UTCOffset : float
-        UTC offset in hours
-    """
-    timestamp = time.mktime(date_time.timetuple())
-
-    requestURL = "https://maps.googleapis.com/maps/api/timezone/json?location=%f,%f&timestamp=%d&sensor=true" % (
-        latitude,
-        longitude,
-        timestamp
-    )
-
-    try:
-        HTTPresponse = urlopen(requestURL)
-    except:
-        return None
-
-    data = json.loads(HTTPresponse.read().decode('utf-8'))
-    if str(data['status']) == 'OK':
-        total_seconds = data['dstOffset'] + data['rawOffset']
-        return total_seconds / 3600.
-    else:
-        return None
 
 
 def ISAatmosphere(altitude=None, temperature=None, density=None, pressure=None,

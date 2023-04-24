@@ -13,8 +13,7 @@ if __name__ == "__main__":
     simEnvironment = forecastEnvironment(launchSiteLat=29.2108,      # deg
                                          launchSiteLon=-81.0228,     # deg
                                          launchSiteElev=4,           # m
-                                         dateAndTime=launch_datetime,
-                                         UTC_offset=-4,
+                                         launchTime=launch_datetime,
                                          forceNonHD=True,
                                          debugging=True)
 
@@ -39,7 +38,7 @@ if __name__ == "__main__":
                        floatingFlight=True,
                        floatingAltitude=30000,                      # m
                        excessPressureCoeff=1,
-                    outputPath=outputPath,
+                       outputPath=outputPath,
                        debugging=True,
                        log_to_file=True,
                        floatDuration=30*60,  #seconds

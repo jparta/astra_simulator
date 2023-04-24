@@ -3,7 +3,6 @@
 # @Date:   2017-04-25 12:40:25
 # @Last Modified by:   p-chambers
 # @Last Modified time: 2017-04-25 16:28:06
-import pytest
 from astra.weather import soundingEnvironment
 from astra import flight
 import os
@@ -24,8 +23,7 @@ def test_soundingEnvironment():
                                          distanceFromSounding=0,        # km
                                          timeFromSounding=3,            # hours
                                          inflationTemperature=10.5,     # degC
-                                         dateAndTime=datetime.now(),
-                                         UTC_offset=0,
+                                         launchTime=datetime.now(),
                                          soundingFile=soundingFile,
                                          debugging=True)
 

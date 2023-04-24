@@ -22,7 +22,16 @@ setup(
     include_package_data=True,
     scripts=['bin/astra-sim'],
     # package_data={'': ['*.dat']},
-    install_requires=["numpy", "matplotlib", "scipy", "grequests", "six", "deap"],
+    install_requires=[
+        "deap",
+        "grequests",
+        "matplotlib",
+        "numpy",
+        "pytz",
+        "scipy",
+        "six",
+        "timezonefinder",
+    ],
     author='Niccolo Zapponi, Paul Chambers',
     author_email='nz1g10@soton.ac.uk, P.R.Chambers@soton.ac.uk',
 )

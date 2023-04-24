@@ -110,7 +110,7 @@ def example_inputs(request):
     # simEnvironment = forecastEnvironment(launchSiteLat=29.2108,      # deg
     #                                      launchSiteLon=-81.0228,     # deg
     #                                      launchSiteElev=4,           # m
-    #                                      dateAndTime=launch_datetime,
+    #                                      launchTime=launch_datetime,
     #                                      forceNonHD=True,
     #                                      debugging=True)
     output_dir = os.path.join(tempfile.gettempdir(), 'astra_output')
@@ -140,8 +140,7 @@ def test_forecast_example_inputs():
     simEnvironment = forecastEnvironment(launchSiteLat=29.2108,      # deg
                                          launchSiteLon=-81.0228,     # deg
                                          launchSiteElev=4,           # m
-                                         dateAndTime=launch_datetime,
-                                         UTC_offset=-4,
+                                         launchTime=launch_datetime,
                                          forceNonHD=True,
                                          debugging=True)
 
@@ -164,7 +163,7 @@ def test_forecast_example_inputs():
               'payloadTrainWeight': 0.433,      # kg
               'parachuteModel': 'SPH36',
               'trainEquivSphereDiam': 0.1,
-              'outputFile': output_dir}
+              'outputPath': output_dir}
     simFlight = flight(**inputs)
     simFlight.run()
 

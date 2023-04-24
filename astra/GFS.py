@@ -9,16 +9,18 @@ documentation for use
 
 University of Southampton
 """
-from datetime import datetime, timedelta
-from math import floor, ceil
-from six.moves import range, builtins
-from six.moves.urllib.request import urlopen
-import logging
-import grequests
 import itertools
-import numpy
-from scipy.interpolate import UnivariateSpline
+import logging
 import urllib.parse
+from datetime import datetime, timedelta
+from math import ceil, floor
+
+import grequests
+import numpy
+import pytz
+from scipy.interpolate import UnivariateSpline
+from six.moves import builtins, range
+from six.moves.urllib.request import urlopen
 
 from . import global_tools as tools
 from .interpolate import Linear4DInterpolator
@@ -316,7 +318,7 @@ class GFS_Handler(object):
         logger.setLevel(log_lev)
 
 
-    def _get_NOAA_REST_url(self, requestVar, requestLongitude, cycle, requestTime):
+    def _get_NOAA_REST_url(self, requestVar, requestLongitude, cycle, requestTimeSlice):
         """
         Parameters
         ----------
@@ -330,15 +332,17 @@ class GFS_Handler(object):
             The [start, end] window of longitude for which to get data
             (GFS units)
         cycle : :obj:`datetime.datetime`
-            The cycle datetime for which to obtain the forecast
-        requestTime : :obj:`datetime.datetime`
-            The launch datetime for which to obtain the forecast
+            The cycle datetime for which to obtain the forecast, in UTC
+        requestTimeSlice : list of int, length 2
+            The [start, end] window of time for which to get data (GFS units, 3h steps)
 
         returns
         -------
         requestURL : string
             The noaa API request url
         """
+        if len(requestTimeSlice) != 2:
+            raise ValueError('requestTimeSlice must be a list of length 2')
         requestURL = '%sgfs%d%02d%02d/gfs_%s_%02dz.ascii?%s[%d:%d][%d:%d][%d:%d][%d:%d]' % (
                 self.baseURL,
                 cycle.year,
@@ -347,14 +351,14 @@ class GFS_Handler(object):
                 {True: '0p25', False: '0p50'}[self.HD],
                 cycle.hour,
                 requestVar,
-                requestTime[0], requestTime[1],
+                requestTimeSlice[0], requestTimeSlice[1],
                 self.requestAltitude[0], self.requestAltitude[1],
                 self.requestLatitude[0], self.requestLatitude[1],
                 requestLongitude[0], requestLongitude[1]
             )
         return requestURL
 
-    def _NOAA_request(self, requestVar, cycle, requestTime):
+    def _NOAA_request(self, requestVar, cycle, requestTimeSlice):
         """
         Parameters
         ----------
@@ -366,21 +370,24 @@ class GFS_Handler(object):
             'vgrdprs': 'V Winds'
         cycle : :obj:`datetime.datetime`
             The cycle datetime for which to obtain the forecast
-        requestTime : :obj:`datetime.datetime`
-            The launch datetime for which to obtain the forecast
+        requestTimeSlice : list of int, length 2
+            The [start, end] window of time for which to get data (GFS units, 3h steps)
         
         Returns
         -------
         dataResults : list
             list of responses for each request longitude
         """
+        if not(isinstance(requestTimeSlice, list) and len(requestTimeSlice) == 2):
+            raise ValueError('requestTimeSlice must be a list of length 2')
+
         dataResults = []
 
         # Check if we need more than 1 request (ie if we are crossing
         # the Greenwich meridian)
         for requestLongitude in self.requestLongitudes:
 
-            requestURL = self._get_NOAA_REST_url(requestVar, requestLongitude, cycle, requestTime)
+            requestURL = self._get_NOAA_REST_url(requestVar, requestLongitude, cycle, requestTimeSlice)
 
             logger.debug('Requesting URL: %s' % requestURL)
 
@@ -440,7 +447,7 @@ class GFS_Handler(object):
         return data_matrix, data_map
 
 
-    def _NOAA_request_all(self, cycle, requestTime, progressHandler):
+    def _NOAA_request_all(self, cycle, requestTimeSlice, progressHandler):
         """Requests temperature, altitude and U-V wind direction data from the
         NOAA GFS system for the ranges specified in the class, and for the
         input cycle time and requestTime.
@@ -452,8 +459,8 @@ class GFS_Handler(object):
             but two are required around the greenwich median)
         cycle : :obj:`datetime.datetime`
             The cycle datetime for which to obtain the forecast
-        requestTime : :obj:`datetime.datetime`
-            The launch datetime for which to obtain the forecast
+        requestTimeSlice : list of int, length 2
+            The [start, end] window of time for which to get data (GFS units, 3h steps)
         progressHandler : function
             Function that handles the download progress. This is usually
             the member function astra.flight.updateProgress.
@@ -471,10 +478,11 @@ class GFS_Handler(object):
         results = {}
         progressHandler(0, 1)
         for ivar, requestVar in enumerate(self.weatherParameters.keys()):
-            dataResults = self._NOAA_request(requestVar,
-                                                 cycle,
-                                                 requestTime
-                                                 )
+            dataResults = self._NOAA_request(
+                requestVar,
+                cycle,
+                requestTimeSlice
+            )
             if dataResults:
                 progressHandler(1. / len(self.weatherParameters) * (ivar + 1), 1)
                 requestReadableName = self.weatherParameters[requestVar]
@@ -485,7 +493,7 @@ class GFS_Handler(object):
             results[requestVar] = dataResults
         return results
 
-    def _NOAA_request_all_async(self, cycle, requestTime, progressHandler):
+    def _NOAA_request_all_async(self, cycle, requestTimeSlice, progressHandler):
         """Collects all urls for noaa data requests for parameters in
         self.weatherParameters, then submits a combined request asynchronously.
 
@@ -500,8 +508,8 @@ class GFS_Handler(object):
             but two are required around the greenwich median)
         cycle : :obj:`datetime.datetime`
             The cycle datetime for which to obtain the forecast
-        requestTime : :obj:`datetime.datetime`
-            The launch datetime for which to obtain the forecast
+        requestTimeSlice : list of int, length 2
+            The [start, end] window of time for which to get data (GFS units, 3h steps)
         progressHandler : function
             Function that handles the download progress. This is usually
             the member function astra.flight.updateProgress.
@@ -526,7 +534,7 @@ class GFS_Handler(object):
         logger.debug('Requesting weather urls asynchronously: status will be sent to requests logger')
 
         for var in self.weatherParameters.keys():
-            urls[var] = [self._get_NOAA_REST_url(var, reqLon, cycle, requestTime)
+            urls[var] = [self._get_NOAA_REST_url(var, reqLon, cycle, requestTimeSlice)
                 for reqLon in self.requestLongitudes]
 
         progress_increment = 1./sum([len(url_list) for url_list in urls.values()])
@@ -633,7 +641,12 @@ class GFS_Handler(object):
         # If it got here, the GFS was found: break the outer loop
         return data_matrices, data_maps
 
-    def getNOAAData(self, simulationDateTime, latestCycleDateTime, progressHandler):
+    def getNOAAData(
+            self,
+            simulationDateTime: datetime,
+            latestCycleDateTime: datetime,
+            progressHandler
+        ):
         """Makes multiple attempts to find an available data set (cycle) from
         the noaa web service, before downloading all results with
         getNOAAMatricesMapsCycle.
@@ -673,6 +686,8 @@ class GFS_Handler(object):
         # available, it tries with 1 cycle older, until one is found with data
         # available. If no cycles are found, the method raises a runtime error.
 
+        thisCycle, requestTimeSlice = None, None
+
         for pastCycle in range(25):
             logger.debug('Attempting to download cycle data.')
             thisCycle = latestCycleDateTime - timedelta(hours=pastCycle * 6)
@@ -684,25 +699,25 @@ class GFS_Handler(object):
 
             # GFS time index for the first dataset to be requested
             # (1 GFS index = three hours)
-            requestTime = floor(hoursFromForecast / 3.)
+            requestTimeStart = floor(hoursFromForecast / 3.)
 
             # This stores the actual time of the first dataset downloaded. It's
             # going to be used to convert real time to GFS "time coordinates"
             # (see getGFStime(time) function)
-            self.firstAvailableTime = self.cycleDateTime + timedelta(hours=requestTime * 3)
+            self.firstAvailableTime = self.cycleDateTime + timedelta(hours=requestTimeStart * 3)
 
             # Always download an extra time dataset
             # PChambers note: probably +1 because of the index slicing system
             # used on the GFS servers, i.e., times 0:5 will get times
             # 0, 1, 2, 3 and 4
-            requestTime = [requestTime, requestTime + ceil(
+            requestTimeSlice = [requestTimeStart, requestTimeStart + ceil(
                 self.forecastDuration / 3.) + 1]
             thisCycle = latestCycleDateTime - timedelta(hours=pastCycle * 6)
             self.cycleDateTime = thisCycle
 
             # Probe the system to see if data is available for this cycle:
             dataResults = self._NOAA_request('tmpprs', thisCycle,
-                [requestTime[0], requestTime[0] + 1])
+                [requestTimeSlice[0], requestTimeSlice[0] + 1])
 
             if (dataResults):
                 break
@@ -711,7 +726,7 @@ class GFS_Handler(object):
 
         # Main download
         data_matrices, data_maps = self.getNOAAMatricesMapsCycle(
-            thisCycle, requestTime, progressHandler)
+            thisCycle, requestTimeSlice, progressHandler)
 
         if not (data_matrices and data_maps):
             raise RuntimeError('No available GFS cycles found!')
@@ -744,14 +759,13 @@ class GFS_Handler(object):
         """
         # create a null handler if input progressHandler is None:
         if not progressHandler:
-            def progressHandler(*args):
-                return None
+            progressHandler = lambda *args: None
 
         #######################################################################
         # INITIALIZE TIME HANDLERS AND CALCULATE MOST RECENT CYCLE AVAILABLE
 
         simulationDateTime = self.launchDateTime
-        currentDateTime = datetime.now()
+        currentDateTime = datetime.now(tz=pytz.utc)
 
         if simulationDateTime < currentDateTime:
             # Simulating a flight in the past. In this case, use the simulation
@@ -764,11 +778,12 @@ class GFS_Handler(object):
         # Determine which cycle issuing hour is the closest to the current one
         # TODO: Fix this unreadable line: Is it trying to get the earliest
         # before? What about 2300: does it go later on earlier?
-        cycleTime = dailyCycles[numpy.digitize([currentDateTime.hour], dailyCycles)[0] - 1]
+        cycleStartHour = dailyCycles[numpy.digitize([currentDateTime.hour], dailyCycles)[0] - 1]
         latestCycleDateTime = datetime(currentDateTime.year,
                                        currentDateTime.month,
                                        currentDateTime.day,
-                                       cycleTime)
+                                       cycleStartHour,
+                                       tzinfo=currentDateTime.tzinfo)
 
         data_matrices, data_maps = self.getNOAAData(simulationDateTime,
             latestCycleDateTime, progressHandler)
@@ -970,7 +985,7 @@ class GFS_Handler(object):
             return results
 
 
-    def getGFStime(self, time):
+    def getGFStime(self, time: datetime):
         """
         Convert standard datetime.datetime objects to GFS time units.
         The time parameter should be a datetime.datetime object.
@@ -982,6 +997,9 @@ class GFS_Handler(object):
             was no downloaded data found.
         """
 
+        if time.tzinfo is None:
+            ValueError('Time must be timezone aware.')
+
         # Check if data is available. If it isn't return NaN.
         if self.firstAvailableTime is None or self.altitudeMap is None:
             return float('nan')
@@ -989,7 +1007,7 @@ class GFS_Handler(object):
             try:
                 # Try to define the time from the first dataset.
                 # If it fails for any reasons, return NaN.
-                timeFromFirstDataset = time - self.firstAvailableTime
+                timeFromFirstDataset = time.astimezone(pytz.utc) - self.firstAvailableTime
                 return self.altitudeMap.fwdTime[0] + timeFromFirstDataset.days\
                     + timeFromFirstDataset.seconds / 3600. / 24.
             except TypeError:

@@ -7,7 +7,8 @@ University of Southampton
 """
 from datetime import datetime
 from pathlib import Path
-from astra.simulator import soundingEnvironment, flight
+from astra.simulator import flight
+from astra.weather import soundingEnvironment
 
 
 if __name__ == "__main__":
@@ -19,8 +20,7 @@ if __name__ == "__main__":
                                          distanceFromSounding=0,        # km
                                          timeFromSounding=3,            # hours
                                          inflationTemperature=10.5,     # degC
-                                         dateAndTime=datetime.now(),
-                                         UTC_offset=0,
+                                         launchTime=datetime.now(),
                                          soundingFile=soundingFile,
                                          debugging=True)
     # TODO: Add an example sounding file, with description of how to create one

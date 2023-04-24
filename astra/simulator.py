@@ -21,7 +21,7 @@ from six.moves import range, builtins
 import numpy
 from scipy.integrate import odeint
 from . import flight_tools as ft
-from .weather import forecastEnvironment, soundingEnvironment
+from .weather import forecastEnvironment
 from . import global_tools as tools
 from . import drag_helium
 from . import available_balloons_parachutes
@@ -718,7 +718,6 @@ class flight(object):
         # Prepare progress file: try and create the file
         self._progressFile = os.path.splitext(new_outputFile)[0] +\
             '_progress.json'
-        logger.info(f"Handling progress file {self._progressFile}", stack_info=True)
         self._outputPath = new_outputFile
     
     # ----------------------------------------------------------------------
@@ -793,7 +792,7 @@ class flight(object):
         # Variable initialization
 
         try:
-            self._preflight(self.environment.dateAndTime)
+            self._preflight(self.environment.launchTime)
         except:
             logger.exception(
                 "Error during preflight validations and calculations:")
@@ -805,7 +804,7 @@ class flight(object):
         # RUN THE FLIGHT SIMULATION
         for flightNumber in range(self.numberOfSimRuns):
             logger.debug('SIMULATING FLIGHT %d' % (flightNumber + 1))
-            result, _ = self.fly(flightNumber, self.environment.dateAndTime, runPreflight=False)
+            result, _ = self.fly(flightNumber, self.environment.launchTime, runPreflight=False)
             self.results.append(result)
             self.updateProgress(
                 float(flightNumber + 1) / self._totalStepsForProgress, 0)
@@ -923,7 +922,7 @@ class flight(object):
                         self.launchSiteLat,
                         self.launchSiteLon,
                         self.floatingAltitude,
-                        self.environment.dateAndTime),
+                        self.environment.launchTime),
                     self.environment.getPressure(self.launchSiteLat,
                                                  self.launchSiteLon,
                                                  self.floatingAltitude,
@@ -981,7 +980,7 @@ class flight(object):
         # simulation.
         if runPreflight:
             try:
-                self._preflight(self.environment.dateAndTime)
+                self._preflight(self.environment.launchTime)
             except:
                 logger.exception(
                     "Error during preflight validations and calculations:")

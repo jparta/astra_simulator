@@ -28,8 +28,7 @@ if __name__ == "__main__":
     simEnvironment = forecastEnvironment(launchSiteLat=51.4779,      # deg
                                          launchSiteLon=0.0014,     # deg
                                          launchSiteElev=4,           # m
-                                         dateAndTime=launch_datetime,
-                                         UTC_offset=0,
+                                         launchTime=launch_datetime,
                                          forceNonHD=True,
                                          debugging=True)
 

@@ -14,12 +14,13 @@ Refer to the individual classes and subclasses for details on how to use them.
 University of Southampton
 Niccolo' Zapponi, nz1g10@soton.ac.uk, 22/04/2013
 """
-import abc
 import logging
 import os
-from datetime import timedelta
+from datetime import datetime
 
 import numpy
+import pytz
+from timezonefinder import TimezoneFinder
 from six.moves import range, builtins
 from scipy.interpolate import UnivariateSpline
 
@@ -56,13 +57,11 @@ class environment(object):
         longitude of the launch site [deg]
     launchSiteElev : float
         elevation of the launch site above Mean Sea Level [m]
-    dateAndTime : :obj:`datetime.datetime`
+    launchTime : :obj:`datetime.datetime`
         Date and time of launch
+        If naive, time zone is looked up based on location
     inflationTemperature : float
         the ambient temperature during the balloon inflation [degC]
-    UTC_offset : float
-        the offset in hours between the current time zone and UTC
-        (for example, Florida in winter has a UTC_offset = -5)
 
     Attributes
     ----------
@@ -72,31 +71,22 @@ class environment(object):
         longitude of the launch site [deg]
     launchSiteElev : float
         elevation of the launch site above Mean Sea Level [m]
-    dateAndTime : :obj:`datetime.datetime`
+    launchTime : :obj:`datetime.datetime`
         Date and time of launch
-    UTC_offset : float
-        The offset in hours between the current time zone and UTC. NOTE: If
-        zero, UTC offset is AUTOMATICALLY retrieved using the launch site GPS
-        location
 
     Notes
     -----
     The primary base class methods that should be overridden are the 'getter'
     functions for Temperature, Pressure, WindDirection, WindSpeed, Density,
     Viscosity
-
-    See Also
-    --------
-    astra.global_tools.getUTCOffset
     """
 
     def __init__(self,
                  launchSiteLat,
                  launchSiteLon,
                  launchSiteElev,
-                 dateAndTime,
+                 launchTime,
                  inflationTemperature=0.0,
-                 UTC_offset=None,
                  debugging=False,
                  load_on_init=False):
 
@@ -108,11 +98,20 @@ class environment(object):
         self.launchSiteLat = launchSiteLat
         self.launchSiteLon = launchSiteLon
         self.launchSiteElev = launchSiteElev
-        self.dateAndTime = dateAndTime
-        self.UTC_offset = UTC_offset
+        self.launchTime = launchTime
         self.debugging = debugging
 
-        self._UTC_time = None
+        if self.launchTime.tzinfo is None:
+            logger.debug("Launch time is naive. Attempting to look up timezone using launch location.")
+            tzf = TimezoneFinder()
+            timezone_name = tzf.timezone_at(lng=self.launchSiteLon, lat=self.launchSiteLat)
+            if timezone_name is None:
+                raise ValueError("Could not find timezone for location. Please provide a timezone-aware launch time.")
+            logger.debug(f"Found timezone {timezone_name} for location.")
+            timezone = pytz.timezone(timezone_name)
+            self.launchTime = timezone.localize(self.launchTime)
+        
+        logger.debug(f"Launch time is {self.launchTime} local time, {self.launchTime.astimezone(pytz.utc)} UTC")
 
         # Monte Carlo parameters
         self.getMCWindDirection = []
@@ -196,11 +195,9 @@ class soundingEnvironment(environment):
         longitude of the launch site [deg]
     launchSiteElev : float
         elevation of the launch site above Mean Sea Level [m]
-    dateAndTime : :obj:`datetime.datetime`
+    launchTime : :obj:`datetime.datetime`
         The launch time
-    UTC_offset : float
-        the offset in hours between the current time zone and UTC (for example,
-        Florida in winter has a UTC_offset = -5)
+        If naive, time zone is looked up based on location
     inflationTemperature : float
         the ambient temperature during the balloon inflation [degC]
     distanceFromSounding : float
@@ -225,8 +222,7 @@ class soundingEnvironment(environment):
         >>> my_sounding_atmosphere.launchSiteLat = 50.2245
         >>> my_sounding_atmosphere.launchSiteLon = -5.3069
         my_sounding_atmosphere.launchSiteElev = 60
-        my_sounding_atmosphere.dateAndTime = datetime.now()
-        my_sounding_atmosphere.UTC_offset = 3
+        my_sounding_atmosphere.launchTime = datetime.now()
         my_sounding_atmosphere.inflationTemperature = 10.5
         my_sounding_atmosphere.distanceFromSounding = 36
         my_sounding_atmosphere.timeFromSounding = 2.8
@@ -239,12 +235,11 @@ class soundingEnvironment(environment):
                  launchSiteLat,
                  launchSiteLon,
                  launchSiteElev,
-                 dateAndTime,
+                 launchTime: datetime,
                  soundingFile,
                  timeFromSounding,
                  distanceFromSounding,
                  inflationTemperature=0.0,
-                 UTC_offset=None,
                  debugging=False,
                  load_on_init=False):
         """Initialize the soundingEnvironment object.
@@ -265,8 +260,7 @@ class soundingEnvironment(environment):
             launchSiteLat=launchSiteLat,
             launchSiteLon=launchSiteLon,
             launchSiteElev=launchSiteElev,
-            dateAndTime=dateAndTime,
-            UTC_offset=UTC_offset,
+            launchTime=launchTime,
             debugging=debugging,
             load_on_init=load_on_init) 
 
@@ -295,17 +289,6 @@ class soundingEnvironment(environment):
         # create a null handler if input progressHandler is None:
         if not progressHandler:
             progressHandler = lambda *args: None
-
-        if self.UTC_offset is None:
-            fetched_offset = tools.getUTCOffset(self.launchSiteLat,
-                self.launchSiteLon,self.dateAndTime)
-            if fetched_offset is None:
-                raise ValueError('Could not fetch time zone data about the launch site. Please set the UTC offset manually.')
-            self.UTC_offset = fetched_offset
-            logger.debug('Fetched time zone data about the launch site: UTC offset is %f hours' % self.UTC_offset)
-
-        self._UTC_time = self.dateAndTime - timedelta(seconds=self.UTC_offset * 3600)
-        logger.debug('Using UTC time %s' % self._UTC_time.strftime('%d/%m/%y %H:%M'))
 
         ext = os.path.splitext(soundingFile)[1]
         assert(ext.lower() in ['.ftr', '.sounding']),\
@@ -716,18 +699,16 @@ class forecastEnvironment(environment):
         longitude of the launch site [deg]
     launchSiteElev : float
         elevation of the launch site above Mean Sea Level [m]
-    dateAndTime : :obj:`datetime.datetime`
+    launchTime : :obj:`datetime.datetime`
         The launch time
-    UTC_offset : float
-        the offset in hours between the current time zone and UTC (for example,
-        Florida in winter has a UTC_offset = -5)
+        If naive, time zone is looked up based on location
     inflationTemperature : float
         the ambient temperature during the balloon inflation [degC]
     [forceNonHD] : bool (default False)
         if TRUE, the weather forecast download will be forced to a lower
         resolution (i.e. 1deg x 1deg)
     [forecastDuration] : float (default 4)
-        The number of hours from dateAndTime for which to download weather data
+        The number of hours from launchTime for which to download weather data
     [use_async] : bool (default True)
         Use an asynchronous request for downloads. This should speed up the
         download, but may incur larger memory overhead for large forecastDuration.
@@ -768,8 +749,7 @@ class forecastEnvironment(environment):
         >>> my_forecast_atmosphere.launchSiteLat = 50.2245
         >>> my_forecast_atmosphere.launchSiteLon = -5.3069
         >>> my_forecast_atmosphere.launchSiteElev = 60
-        >>> my_forecast_atmosphere.dateAndTime = datetime.now() + timedelta(days=1)
-        >>> my_forecast_atmosphere.UTC_offset = 3
+        >>> my_forecast_atmosphere.launchTime = datetime.now() + timedelta(days=1)
         >>> my_forecast_atmosphere.loadForecast()
 
     """
@@ -778,8 +758,7 @@ class forecastEnvironment(environment):
                  launchSiteLat,
                  launchSiteLon,
                  launchSiteElev,
-                 dateAndTime,
-                 UTC_offset=None,
+                 launchTime: datetime,
                  inflationTemperature=0.0,
                  forceNonHD=False,
                  forecastDuration=4,
@@ -806,8 +785,7 @@ class forecastEnvironment(environment):
             launchSiteLat=launchSiteLat,
             launchSiteLon=launchSiteLon,
             launchSiteElev=launchSiteElev,
-            dateAndTime=dateAndTime,
-            UTC_offset=UTC_offset,
+            launchTime=launchTime,
             debugging=debugging,
             load_on_init=load_on_init)
 
@@ -842,31 +820,20 @@ class forecastEnvironment(environment):
         if self.launchSiteLon == 0.0:
             logger.debug(
                 'The launch site longitude is set to 0!')
-        if self.dateAndTime is None:
+        if self.launchTime is None:
             raise ValueError(
                 'The flight date and time has not been set and is required!')
-
-        if self.UTC_offset == None:
-            fetched_offset = tools.getUTCOffset(
-                self.launchSiteLat,self.launchSiteLon,self.dateAndTime)
-            if fetched_offset is None:
-                raise ValueError('Could not fetch time zone data about the launch site. Please set the UTC offset manually.')
-            self.UTC_offset = fetched_offset
-            logger.debug('Fetched time zone data about the launch site: UTC offset is %f hours' % self.UTC_offset)
-
-        self._UTC_time = self.dateAndTime - timedelta(seconds=self.UTC_offset * 3600)
-        logger.debug('Using UTC time %s' % self._UTC_time.strftime('%d/%m/%y %H:%M'))
 
         # log the current parameters
         logger.info('Preparing to download weather data for parameters:')
         logger.debug("    Launch site Latitude: {}".format(self.launchSiteLat))
         logger.debug("    Launch site Longitude: {}".format(self.launchSiteLon))
-        logger.debug("    Launch time: {}".format(self._UTC_time))
+        logger.debug("    Launch time UTC: {}".format(self.launchTime.astimezone(pytz.utc)))
 
         # Setup the GFS link
         self._GFSmodule = GFS.GFS_Handler(self.launchSiteLat,
                                           self.launchSiteLon,
-                                          self._UTC_time,
+                                          date_time=self.launchTime.astimezone(pytz.utc),
                                           use_async=self.use_async,
                                           requestSimultaneous=self.requestSimultaneous,
                                           HD=(not self.forceNonHD),
@@ -894,19 +861,17 @@ class forecastEnvironment(environment):
                                                 'windspd')
 
         self.getPressure = lambda lat, lon, alt, time: float(
-            pressureInterpolation(lat, lon, alt, self._GFSmodule.getGFStime(
-                time - timedelta(seconds=self.UTC_offset * 3600)))
+            pressureInterpolation(lat, lon, alt, self._GFSmodule.getGFStime(time.astimezone(pytz.utc)))
             )
         self.getTemperature = lambda lat, lon, alt, time: float(
-            temperatureInterpolation(lat, lon, alt, self._GFSmodule.getGFStime(
-                time - timedelta(seconds=self.UTC_offset * 3600)))
+            temperatureInterpolation(lat, lon, alt, self._GFSmodule.getGFStime(time.astimezone(pytz.utc)))
             )
         self.getWindDirection = lambda lat, lon, alt, time: float(
-            windDirectionInterpolation(lat, lon, alt, self._GFSmodule.getGFStime(
-                time - timedelta(seconds=self.UTC_offset * 3600))))
+            windDirectionInterpolation(lat, lon, alt, self._GFSmodule.getGFStime(time.astimezone(pytz.utc)))
+        )
         self.getWindSpeed = lambda lat, lon, alt, time: float(
-            windSpeedInterpolation(lat, lon, alt, self._GFSmodule.getGFStime(
-                time - timedelta(seconds=self.UTC_offset * 3600))))
+            windSpeedInterpolation(lat, lon, alt, self._GFSmodule.getGFStime(time.astimezone(pytz.utc)))
+        )
 
         # Extra definitions for derived quantities (density and viscosity)
         AirMolecMass = 0.02896
@@ -949,29 +914,18 @@ class forecastEnvironment(environment):
             logger.warning(
                 'The weather was already loaded. All data will be overwritten.')
 
-        if self.UTC_offset == None:
-            fetched_offset = tools.getUTCOffset(
-                self.launchSiteLat,self.launchSiteLon,self.dateAndTime)
-            if fetched_offset is None:
-                raise ValueError('Could not fetch time zone data about the launch site. Please set the UTC offset manually.')
-            self.UTC_offset = fetched_offset
-            logger.debug('Fetched time zone data about the launch site: UTC offset is %f hours' % self.UTC_offset)
-
-        self._UTC_time = self.dateAndTime - timedelta(seconds=self.UTC_offset * 3600)
-        logger.debug('Using UTC time %s' % self._UTC_time.strftime('%d/%m/%y %H:%M'))
-
         # log the current parameters
         logger.info('Preparing to download weather data for parameters:')
         logger.debug("    Launch site Latitude: {}".format(self.launchSiteLat))
         logger.debug("    Launch site Longitude: {}".format(self.launchSiteLon))
-        logger.debug("    Launch time: {}".format(self._UTC_time))
+        logger.debug("    Launch time UTC: {}".format(self.launchTime.astimezone(pytz.utc)))
 
         # LOAD THE DATA: curently HD is not allowed, since only the named noaa
         # parameters are loaded from a file (different files are required for
         # high altitude data in the case of an HD simulation).
         self._GFSmodule = GFS.GFS_Handler.fromFiles(fileDict,
             lat=self.launchSiteLat, lon=self.launchSiteLon,
-            date_time=self._UTC_time, HD=False,
+            date_time=self.launchTime.astimezone(pytz.utc), HD=False,
             forecastDuration=self.forecastDuration,
             debugging=self.debugging)
 
@@ -985,19 +939,17 @@ class forecastEnvironment(environment):
                                                 'windspd')
 
         self.getPressure = lambda lat, lon, alt, time: float(
-            pressureInterpolation(lat, lon, alt, self._GFSmodule.getGFStime(
-                time - timedelta(seconds=self.UTC_offset * 3600)))
-            )
+            pressureInterpolation(lat, lon, alt, self._GFSmodule.getGFStime(time.astimezone(pytz.utc)))
+        )
         self.getTemperature = lambda lat, lon, alt, time: float(
-            temperatureInterpolation(lat, lon, alt, self._GFSmodule.getGFStime(
-                time - timedelta(seconds=self.UTC_offset * 3600)))
-            )
+            temperatureInterpolation(lat, lon, alt, self._GFSmodule.getGFStime(time.astimezone(pytz.utc)))
+        )
         self.getWindDirection = lambda lat, lon, alt, time: float(
-            windDirectionInterpolation(lat, lon, alt, self._GFSmodule.getGFStime(
-                time - timedelta(seconds=self.UTC_offset * 3600))))
+            windDirectionInterpolation(lat, lon, alt, self._GFSmodule.getGFStime(time.astimezone(pytz.utc)))
+        )
         self.getWindSpeed = lambda lat, lon, alt, time: float(
-            windSpeedInterpolation(lat, lon, alt, self._GFSmodule.getGFStime(
-                time - timedelta(seconds=self.UTC_offset * 3600))))
+            windSpeedInterpolation(lat, lon, alt, self._GFSmodule.getGFStime(time.astimezone(pytz.utc)))
+        )
 
         # Extra definitions for derived quantities (density and viscosity)
         AirMolecMass = 0.02896

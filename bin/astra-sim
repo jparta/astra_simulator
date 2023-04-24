@@ -89,7 +89,7 @@ def main():
                                              launchSiteLat=args.y,     # deg
                                              launchSiteElev=args.z,        # m
                                              soundingFile=args.sounding,
-                                             dateAndTime=launch_datetime,
+                                             launchTime=launch_datetime,
                                              inflationTemperature=args.k,
                                              distanceFromSounding=args.e,
                                              timeFromSounding=args.i,
@@ -100,7 +100,7 @@ def main():
                                              launchSiteLat=args.y,     # deg
                                              launchSiteElev=args.z,        # m
                                              inflationTemperature=args.k,
-                                             dateAndTime=launch_datetime,
+                                             launchTime=launch_datetime,
                                              forecastDuration=args.l,
                                              forceNonHD=args.noHD,
                                              debugging=args.debug,
