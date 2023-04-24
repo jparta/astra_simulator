@@ -294,8 +294,7 @@ class soundingEnvironment(environment):
 
         # create a null handler if input progressHandler is None:
         if not progressHandler:
-            def progressHandler(*args):
-                return None
+            progressHandler = lambda *args: None
 
         if self.UTC_offset is None:
             fetched_offset = tools.getUTCOffset(self.launchSiteLat,
