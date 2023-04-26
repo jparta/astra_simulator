@@ -99,6 +99,12 @@ class environment(object):
         self.launchTime = launchTime
         self.debugging = debugging
 
+        if debugging:
+            log_lev = logging.DEBUG
+        else:
+            log_lev = logging.WARNING
+        logger.setLevel(log_lev)
+
         if self.launchTime.tzinfo is None:
             logger.debug("Launch time is naive. Attempting to look up timezone using launch location.")
             tzf = TimezoneFinder()
@@ -117,12 +123,6 @@ class environment(object):
 
         self._weatherLoaded = False
 
-        if debugging:
-            log_lev = logging.DEBUG
-        else:
-            log_lev = logging.WARNING
-
-        logger.setLevel(log_lev)
 
     def getTemperature(self, lat, lon, alt, time):
         """Request the temperature for an input location and time.
