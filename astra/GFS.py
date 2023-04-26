@@ -394,7 +394,7 @@ class GFS_Handler(object):
             try:
                 HTTPresponse = urlopen(requestURL)
                 response = HTTPresponse.read().decode('utf-8')
-            except:
+            except Exception:
                 logger.exception(
                     'Error while connecting to the GFS server.')
                 return

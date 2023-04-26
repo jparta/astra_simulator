@@ -559,7 +559,7 @@ class flight(object):
             if not new_environment._weatherLoaded:
                 try:
                     new_environment.load(self.updateProgress)
-                except:
+                except Exception:
                     logger.exception("Environment loading failed: see traceback")
                     raise
 
@@ -589,7 +589,7 @@ class flight(object):
     def balloonGasType(self, new_balloonGasType):
         try:
             self._gasMolecularMass = ft.MIXEDGAS_MOLECULAR_MASS[new_balloonGasType]
-        except:
+        except Exception:
             logger.exception('{} is an invalid gas type'.format(
                 new_balloonGasType))
             raise
@@ -794,7 +794,7 @@ class flight(object):
 
         try:
             self._preflight(self.environment.launchTime)
-        except:
+        except Exception:
             logger.exception(
                 "Error during preflight validations and calculations:")
             raise
@@ -982,7 +982,7 @@ class flight(object):
         if runPreflight:
             try:
                 self._preflight(self.environment.launchTime)
-            except:
+            except Exception:
                 logger.exception(
                     "Error during preflight validations and calculations:")
                 raise
@@ -1452,7 +1452,7 @@ class flight(object):
                 import zlib
 
                 zipCompression = zipfile.ZIP_DEFLATED
-            except:
+            except Exception:
                 zipCompression = zipfile.ZIP_STORED
 
             with zipfile.ZipFile(filename, 'w') as zipKmz:
@@ -1554,7 +1554,7 @@ class flight(object):
                 import zlib
 
                 zipCompression = zipfile.ZIP_DEFLATED
-            except:
+            except Exception:
                 zipCompression = zipfile.ZIP_STORED
 
             with zipfile.ZipFile(filename, 'w') as zipCsv:
@@ -1658,7 +1658,7 @@ class flight(object):
                 path = os.path.join(baseName, 'out' + '.' + data_format)
                 try:
                     self.write(path)
-                except:
+                except Exception:
                     logger.exception("flight simulator failed to write output {} file".format(data_format))
                     raise
         elif data_format == '.web':
@@ -1668,7 +1668,7 @@ class flight(object):
                 path = baseName + '.' + data_format
                 try:
                     self.write(path)
-                except:
+                except Exception:
                     logger.exception("flight simulator failed to write output {} file".format(data_format))
                     raise
 
