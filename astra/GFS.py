@@ -603,7 +603,6 @@ class GFS_Handler(object):
         # This is just a flag to make sure that if no data is found, it
         # stops the whole download and re-starts the loop with an older
         # cycle.
-        progressHandler(0, 1)
 
         if self.requestSimultaneous:
             ###############################################################
@@ -624,6 +623,7 @@ class GFS_Handler(object):
                         self._generate_matrix(dataResults)
 
         else:
+            progressHandler(0, 1)
             for ivar, requestVar in enumerate(self.weatherParameters.keys()):
                 # Convert the data to matrix and map and store progress
                 for i in range(5):
