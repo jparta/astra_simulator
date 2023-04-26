@@ -18,6 +18,8 @@ from datetime import timedelta
 from math import pi
 from pathlib import Path
 from sys import stdout
+import sys
+import typing
 
 import numpy
 from scipy.integrate import odeint
@@ -378,8 +380,11 @@ class flight(object):
     [progress_to_file] : bool (default False)
         If TRUE, a progress .json file will be created in the current folder
         and will be updated during preflight and then once per 'flight'.
-        If FALSE, progress information about the simulation will be displayed
-        on the terminal or command line.
+        If FALSE, progress information about the simulation will be output to
+        progress_stream or stdout. See progress_stream.
+    [progress_stream] : file-like object (default None)
+        If not None, info-level (non-debug) progress output will be written to
+        this stream. If None, the output will be written to stdout.
 
     Attributes
     ----------
@@ -404,28 +409,31 @@ class flight(object):
 
         >>> my_flight_simulation.run()
     """
-    def __init__(self,
-                 balloonGasType,
-                 balloonModel,
-                 nozzleLift,
-                 payloadTrainWeight,
-                 environment=None,
-                 maxFlightTime=18000,
-                 parachuteModel=None,
-                 numberOfSimRuns=10,
-                 trainEquivSphereDiam=0.1,
-                 floatingFlight=False,
-                 floatingAltitude=numpy.inf,
-                 floatDuration=numpy.inf,
-                 ventingStart=3000,
-                 excessPressureCoeff=1.,
-                 cutdown=False,
-                 cutdownAltitude=numpy.inf,
-                 cutdownTimeout=numpy.inf,
-                 outputPath: str | Path='',
-                 debugging=False,
-                 log_to_file=False,
-                 progress_to_file=False):
+    def __init__(
+            self,
+            balloonGasType,
+            balloonModel,
+            nozzleLift,
+            payloadTrainWeight,
+            environment=None,
+            maxFlightTime=18000,
+            parachuteModel=None,
+            numberOfSimRuns=10,
+            trainEquivSphereDiam=0.1,
+            floatingFlight=False,
+            floatingAltitude=numpy.inf,
+            floatDuration=numpy.inf,
+            ventingStart=3000,
+            excessPressureCoeff=1.,
+            cutdown=False,
+            cutdownAltitude=numpy.inf,
+            cutdownTimeout=numpy.inf,
+            outputPath: str | Path='',
+            debugging=False,
+            log_to_file=False,
+            progress_to_file=False,
+            progress_stream: typing.TextIO | None = None,
+        ):
         """
         Initialize all the parameters of the object and setup the debugging if
         required.
@@ -469,6 +477,7 @@ class flight(object):
         self._progressToFile = progress_to_file
         self._debugging = debugging
         self.outputPath = outputPath
+        self.progress_stream = progress_stream or sys.stdout
 
         # User defined variables
         # Note: As setters are used in some of these variables, there is a
@@ -1712,17 +1721,17 @@ class flight(object):
         else:
             if action == 0:
                 if value < 1:
-                    stdout.write('\rThe simulation is running. Current progress: %d%%' % int(value * 100))
+                    self.progress_stream.write('\rThe simulation is running. Current progress: %d%%' % int(value * 100))
                 else:
-                    stdout.write('\rThe simulation is running. Current progress: 100%')
-                    stdout.write('\nSimulation completed.\n')
+                    self.progress_stream.write('\rThe simulation is running. Current progress: 100%')
+                    self.progress_stream.write('\nSimulation completed.\n')
             elif action == 1:
                 if value < 1:
-                    stdout.write('\rDownloading weather forecast: %d%%' % int(value * 100))
+                    self.progress_stream.write('\rDownloading weather forecast: %d%%' % int(value * 100))
                 else:
-                    stdout.write('\rDownloading weather forecast. 100%')
-                    stdout.write('\nWeather downloaded.\n')
+                    self.progress_stream.write('\rDownloading weather forecast. 100%')
+                    self.progress_stream.write('\nWeather downloaded.\n')
             elif action == 2:
-                stdout.write('Preparing simulation\n')
+                self.progress_stream.write('Preparing simulation\n')
 
-            stdout.flush()
+            self.progress_stream.flush()
