@@ -1719,19 +1719,6 @@ class flight(object):
             progFile.write('{ "progress" : %f, "action" : %d }' % (value, action))
             progFile.close()
         else:
-            if action == 0:
-                if value < 1:
-                    self.progress_stream.write('\rThe simulation is running. Current progress: %d%%' % int(value * 100))
-                else:
-                    self.progress_stream.write('\rThe simulation is running. Current progress: 100%')
-                    self.progress_stream.write('\nSimulation completed.\n')
-            elif action == 1:
-                if value < 1:
-                    self.progress_stream.write('\rDownloading weather forecast: %d%%' % int(value * 100))
-                else:
-                    self.progress_stream.write('\rDownloading weather forecast. 100%')
-                    self.progress_stream.write('\nWeather downloaded.\n')
-            elif action == 2:
-                self.progress_stream.write('Preparing simulation\n')
-
+            progress_message = tools.progress_vals_to_msg(value, action)
+            self.progress_stream.write(progress_message)
             self.progress_stream.flush()

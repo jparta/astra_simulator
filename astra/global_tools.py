@@ -388,3 +388,22 @@ def ISAatmosphere(altitude=None, temperature=None, density=None, pressure=None,
         else:
             logger.warning('Temperature out of bounds. Returning values unchanged')
             return altitude, temperature, density, pressure, speedOfSound
+
+
+def progress_vals_to_msg(value: float, action: int) -> str:
+    progress_message = None
+    if action == 0:
+        if value < 1:
+            progress_message = '\rThe simulation is running. Current progress: %d%%' % int(value * 100)
+        else:
+            progress_message = '\rThe simulation is running. Current progress: 100%\nSimulation completed.\n'
+    elif action == 1:
+        if value < 1:
+            progress_message = '\rDownloading weather forecast: %d%%' % int(value * 100)
+        else:
+            progress_message = '\rDownloading weather forecast. 100%\nWeather downloaded.\n'
+    elif action == 2:
+        progress_message = 'Preparing simulation\n'
+    if progress_message is None:
+        raise ValueError("Unknown action")
+    return progress_message
