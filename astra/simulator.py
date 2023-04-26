@@ -26,7 +26,7 @@ from six.moves import builtins, range
 from . import available_balloons_parachutes, drag_helium
 from . import flight_tools as ft
 from . import global_tools as tools
-from .weather import forecastEnvironment
+from .weather import EmptyEnvironment, environment, forecastEnvironment
 
 # Pass through the @profile decorator if line profiler (kernprof) is not in use
 try:
@@ -554,11 +554,17 @@ class flight(object):
     
     @environment.setter
     def environment(self, new_environment):
-        if new_environment:
-
+        if isinstance(new_environment, EmptyEnvironment):
+            # Environment is deliberately omitted, do nothing
+            pass
+        elif isinstance(new_environment, environment):
+            # If environment has a progressHandler, use it
+            # Otherwise, use updateProgress
+            if not new_environment.progressHandler:
+                new_environment.progressHandler = self.updateProgress
             if not new_environment._weatherLoaded:
                 try:
-                    new_environment.load(self.updateProgress)
+                    new_environment.load()
                 except Exception:
                     logger.exception("Environment loading failed: see traceback")
                     raise
@@ -573,7 +579,7 @@ class flight(object):
             else:
                 self._usingGFS = False
         else:
-            logger.warning("Empty environment loaded. Please load a valid environment")
+            raise ValueError("Environment not provided. Please provide a valid one.")
         self._environment = new_environment
 
 
@@ -783,7 +789,10 @@ class flight(object):
         and delivering the full stack trace to both the stdout and the module
         logger (named astra.simulator).
         """
-        self.updateProgress(1.0, 2)
+        # Use environment's progress handler if available
+        progressHandler = self._environment.progressHandler or self.updateProgress
+        progressHandler(1.0, 2)
+        
         self._totalStepsForProgress = self.numberOfSimRuns + 1
 
         # _________________________________________________________________ #
@@ -798,8 +807,8 @@ class flight(object):
             logger.exception(
                 "Error during preflight validations and calculations:")
             raise
-
-        self.updateProgress(0.0, 0)
+        
+        progressHandler(0.0, 0)
 
         # _________________________________________________________________ #
         # RUN THE FLIGHT SIMULATION
@@ -807,14 +816,14 @@ class flight(object):
             logger.debug('SIMULATING FLIGHT %d' % (flightNumber + 1))
             result, _ = self.fly(flightNumber, self.environment.launchTime, runPreflight=False)
             self.results.append(result)
-            self.updateProgress(
+            progressHandler(
                 float(flightNumber + 1) / self._totalStepsForProgress, 0)
 
         # _________________________________________________________________ #
         # POSTFLIGHT HOUSEKEEPING AND RESULT PROCESSING
         self._hasRun = True
         self.postflight()
-        self.updateProgress(1.0, 0)
+        progressHandler(1.0, 0)
         return None
 
     def initMonteCarloParams(self, numberOfSimRuns):

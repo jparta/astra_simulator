@@ -58,6 +58,9 @@ class environment(object):
     launchTime : :obj:`datetime.datetime`
         Date and time of launch
         If naive, time zone is looked up based on location
+    progressHandler : function
+        function to call to report progress
+        arguments: progress (float), type of progress (int)
     inflationTemperature : float
         the ambient temperature during the balloon inflation [degC]
 
@@ -86,6 +89,7 @@ class environment(object):
                  launchTime,
                  inflationTemperature=0.0,
                  debugging=False,
+                 progressHandler=None,
                  load_on_init=False):
 
         # COMMON INTERFACE
@@ -97,6 +101,7 @@ class environment(object):
         self.launchSiteLon = launchSiteLon
         self.launchSiteElev = launchSiteElev
         self.launchTime = launchTime
+        self.progressHandler = progressHandler
         self.debugging = debugging
 
         if debugging:
@@ -122,6 +127,13 @@ class environment(object):
         self.getMCWindSpeed = []
 
         self._weatherLoaded = False
+
+
+    def load(self):
+        """Load weather data from source."""
+        raise NotImplementedError(
+            "load method must be implemented by class {}".format(
+                type(self).__name__))
 
 
     def getTemperature(self, lat, lon, alt, time):
@@ -175,6 +187,36 @@ class environment(object):
         raise NotImplementedError(
             "getWindDirection method must be implemented by class {}".format(
                 type(self).__name__))
+
+
+class EmptyEnvironment(environment):
+    """
+    Class which does not load any weather data.
+    Used for target flights, which handle their environments differently.
+    """
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def load(self):
+        pass
+
+    def getTemperature(self, *args):
+        pass
+
+    def getPressure(self, *args):
+        pass
+
+    def getDensity(self, *args):
+        pass
+
+    def getViscosity(self, *args):
+        pass
+
+    def getWindSpeed(self, *args):
+        pass
+
+    def getWindDirection(self, *args):
+        pass
 
 
 class soundingEnvironment(environment):
@@ -262,7 +304,7 @@ class soundingEnvironment(environment):
             debugging=debugging,
             load_on_init=load_on_init) 
 
-    def load(self, progressHandler=None):
+    def load(self):
         """Load the sounding file and generate the atmospheric model.
 
         Data is validated upon loading. Once this is done, cubic spline
@@ -285,8 +327,8 @@ class soundingEnvironment(environment):
         soundingFile = self.soundingFile
 
         # create a null handler if input progressHandler is None:
-        if not progressHandler:
-            progressHandler = lambda *args: None
+        if not self.progressHandler:
+            self.progressHandler = lambda *args: None
 
         ext = os.path.splitext(soundingFile)[1]
         assert(ext.lower() in ['.ftr', '.sounding']),\
@@ -329,10 +371,10 @@ class soundingEnvironment(environment):
                     SKNT.append(float(lineEntries[6]))
 
             logger.debug('Data imported.')
-            progressHandler(0.5, 1)
+            self.progressHandler(0.5, 1)
 
             if self._process_sounding_data(PRESS, HGHT, TEMP, DRCT, SKNT):
-                progressHandler(1.0, 1)
+                self.progressHandler(1.0, 1)
                 self._weatherLoaded = True
                 logger.debug('Weather successfully loaded.')
             else:
@@ -785,10 +827,11 @@ class forecastEnvironment(environment):
             launchSiteElev=launchSiteElev,
             launchTime=launchTime,
             debugging=debugging,
+            progressHandler=progressHandler,
             load_on_init=load_on_init)
 
     @profile
-    def load(self, progressHandler=None):
+    def load(self):
         """
         Create a link to the Global Forecast System and download the required
         atmospheric data.
@@ -840,7 +883,7 @@ class forecastEnvironment(environment):
                                           debugging=self.debugging)
 
         # Connect to the GFS and download data
-        if self._GFSmodule.downloadForecast(progressHandler):
+        if self._GFSmodule.downloadForecast(self.progressHandler):
             logger.debug('GFS data successfully downloaded.')
         else:
             logger.error('Error while downloading GFS data.')

@@ -36,7 +36,7 @@ from . import global_tools as tools
 from .available_balloons_parachutes import balloons
 from .flight_tools import liftingGasMass, nozzleLiftFixedAscent
 from .simulator import flight, flightProfile
-from .weather import forecastEnvironment
+from .weather import EmptyEnvironment, forecastEnvironment
 
 
 # Helper functions for deap
@@ -265,7 +265,7 @@ class targetFlight(flight):
                  progress_to_file=False,
                  launchSiteForecasts=[]):
 
-        super(targetFlight, self).__init__(environment=None,
+        super(targetFlight, self).__init__(environment=EmptyEnvironment(),
                                 balloonGasType=balloonGasType,
                                 balloonModel=balloonModel,
                                 nozzleLift=nozzleLift,
