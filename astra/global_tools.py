@@ -390,20 +390,24 @@ def ISAatmosphere(altitude=None, temperature=None, density=None, pressure=None,
             return altitude, temperature, density, pressure, speedOfSound
 
 
-def progress_vals_to_msg(value: float, action: int) -> str:
-    progress_message = None
+def progress_vals_to_msg(value: float, action: int) -> list[str]:
+    """Takes in a progress value and an action and returns a list of strings which form the progress message.
+    """
+    progress_message = []
     if action == 0:
         if value < 1:
-            progress_message = '\rThe simulation is running. Current progress: %d%%' % int(value * 100)
+            progress_message.append('\rThe simulation is running. Current progress: %d%%\n' % int(value * 100))
         else:
-            progress_message = '\rThe simulation is running. Current progress: 100%\nSimulation completed.\n'
+            progress_message.append('\rThe simulation is running. Current progress: 100%\n')
+            progress_message.append('Simulation completed.\n')
     elif action == 1:
         if value < 1:
-            progress_message = '\rDownloading weather forecast: %d%%' % int(value * 100)
+            progress_message.append('\rDownloading weather forecast: %d%%\n' % int(value * 100))
         else:
-            progress_message = '\rDownloading weather forecast. 100%\nWeather downloaded.\n'
+            progress_message.append('\rDownloading weather forecast. 100%\n')
+            progress_message.append('Weather downloaded.\n')
     elif action == 2:
-        progress_message = 'Preparing simulation\n'
-    if progress_message is None:
+        progress_message.append('Preparing simulation\n')
+    else:
         raise ValueError("Unknown action")
     return progress_message

@@ -1720,5 +1720,6 @@ class flight(object):
             progFile.close()
         else:
             progress_message = tools.progress_vals_to_msg(value, action)
-            self.progress_stream.write(progress_message)
+            for line in progress_message:
+                self.progress_stream.write(line)
             self.progress_stream.flush()
