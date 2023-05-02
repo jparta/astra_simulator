@@ -714,27 +714,28 @@ class flight(object):
     def outputPath(self):
         """output file property
 
-        Setting this value will attempt to create the input filename, before
-        deleting it instantly. This value will later be used after a run
-        to write all results to file.
+        Setting this value will attempt to write to the output filepath, 
+        before deleting the test file instantly. This value will later be
+        used after a run to write all results to file.
         """
         return self._outputPath
     
     @outputPath.setter
-    def outputPath(self, new_outputFile):
-        if new_outputFile:
+    def outputPath(self, new_outputPath):
+        new_outputPath = Path(new_outputPath)
+        if new_outputPath.is_file():
+            raise ValueError('The output path points to an existing file.')
+        else:
+            write_test = new_outputPath / 'test.txt'
             try:
-                out = open(new_outputFile, 'w')
-                out.close()
-                os.remove(new_outputFile)
+                write_test.touch()
             except IOError:
-                if not os.path.isdir(new_outputFile):
-                    logger.exception('The output file cannot be created.\n')
-                    raise
-        # Prepare progress file: try and create the file
-        self._progressFile = os.path.splitext(new_outputFile)[0] +\
-            '_progress.json'
-        self._outputPath = new_outputFile
+                raise ValueError('We don\'t have permission to write to the output path.')
+            else:
+                # Clean up if we can write to the path
+                write_test.unlink()
+        self._progressFile = new_outputPath / 'sim_progress.json'
+        self._outputPath = new_outputPath
     
     # ----------------------------------------------------------------------
     def reset(self, keepParameters=False):
