@@ -55,7 +55,7 @@ balloons = {
     "HW1500": (1.5, 9.5, 10.6513, 14.3577),
     "HW1600": (1.6, 10.5, 11.7725, 14.3577),
     "HW2000": (2.0, 11.0, 12.3330, 14.3577),
-    # Stratoflights (StratoFlights Balloon)
+    # Stratoflights (StratoFlights Balloon -> SFB, unofficial identifiers)
     "SFB800": (0.8, 7.5, 8.4088, 14.3577),  # article no. 100250
 }
 """Balloon data.
@@ -78,12 +78,13 @@ parachutes = {
     "SPH100": 4.6,
     "TX5012": 0.69398,
     "TX160": 1.91134,
-    # Stratoflights (StratoFlights Parachute)
-    "SFP800": 0.899,  # article no. 100200
+    # Stratoflights (StratoFlights Parachute -> SFP, unofficial identifiers)
+    "SFP800": 0.55,  # article no. 100200, calculated for octagon with 0.88 m longest diagonal (constructed diameter)
     None: 0,
     "": 0
 }
 """Parachute Data
 
 Data is in the format: "CHUTE ID" : A_ref
+A_ref is the projected area of the parachute in m^2.
 """
