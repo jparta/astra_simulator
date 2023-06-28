@@ -4,6 +4,7 @@
 # @Last Modified by:   p-chambers
 # @Last Modified time: 2017-04-25 16:28:06
 import os
+from pathlib import Path
 import tempfile
 from datetime import datetime, timedelta
 
@@ -36,7 +37,8 @@ def test_soundingEnvironment():
     # simEnvironment.loadForecast()
 
     # Launch setup
-    output_dir = os.path.join(tempfile.gettempdir(), 'astra_output')
+    tempdir = tempfile.TemporaryDirectory()
+    output_dir = Path(tempdir.name) / 'astra_output'
 
     simFlight = flight(environment=simEnvironment,
                        balloonGasType='Helium',

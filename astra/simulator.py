@@ -350,10 +350,14 @@ class flight(object):
     [cutdownTimeout] : scalar (default np.inf)
         Time is seconds after launch, at which to trigger a burst if
         cutdown is True.
-    [outputFile] : string (default '')
-        the path of the output file containing all the simulation data. The
-        format of the file to be generated depends on the extension. Available
-        formats are,
+    [outputPath] : str or pathlib.Path (default '')
+        The path of the output directory where simulation data and log files
+        will be stored. To make sure nothing is overwritten, the directory
+        must not exist initially.
+    [outputFormats] : tuple[str] (default None)
+        The file formats that are generated from simulation outputs. None or an
+        empty tuple means all formats are generated. The stem of each file is
+        'out', e.g. out.json. Available formats are:
         'json' : JavaScript data structure, used to provide data to the
             web interface
         'kml' : Standard format for geographical data. It can be opened by
@@ -428,7 +432,8 @@ class flight(object):
             cutdown=False,
             cutdownAltitude=numpy.inf,
             cutdownTimeout=numpy.inf,
-            outputPath: str | Path='',
+            outputPath: str | Path = '',
+            outputFormats: tuple[str] | None=None,
             debugging=False,
             log_to_file=False,
             progress_to_file=False,
@@ -444,8 +449,11 @@ class flight(object):
         else:
             log_lev = logging.WARNING
 
-        if outputPath:
-            Path(outputPath).parent.mkdir(parents=True, exist_ok=True)
+        self._progressToFile = progress_to_file
+        self._debugging = debugging
+        self.outputPath = outputPath
+        self.outputFormats = outputFormats
+        self.progress_stream = progress_stream or sys.stdout
 
         if log_to_file:
             # Reset the app logger handlers and reset basic config
@@ -456,7 +464,7 @@ class flight(object):
             for handler in logging.root.handlers[:]:
                 logging.root.removeHandler(handler)
 
-            log_file = Path(outputPath).parent / 'astra_py_error_debug.log'
+            log_file = self.outputPath / 'astra_py_error_debug.log'
             # Set a maximum log file size of 5MB:
             handler = logging.handlers.RotatingFileHandler(log_file,
                 mode='a',
@@ -473,11 +481,6 @@ class flight(object):
             # rootlogger.setLevel(log_lev)
         else:
             logger.setLevel(log_lev)
-
-        self._progressToFile = progress_to_file
-        self._debugging = debugging
-        self.outputPath = outputPath
-        self.progress_stream = progress_stream or sys.stdout
 
         # User defined variables
         # Note: As setters are used in some of these variables, there is a
@@ -723,19 +726,28 @@ class flight(object):
     @outputPath.setter
     def outputPath(self, new_outputPath):
         new_outputPath = Path(new_outputPath)
-        if new_outputPath.is_file():
-            raise ValueError('The output path points to an existing file.')
+        if new_outputPath.exists():
+            raise ValueError(f'Output path {new_outputPath} already exists. Provide a path which does not yet exist.')
+        new_outputPath.mkdir(parents=True, exist_ok=True)
+
+        write_test = new_outputPath / 'test.txt'
+        try:
+            write_test.touch()
+        except IOError:
+            raise ValueError('We don\'t have permission to write to the output path.')
         else:
-            write_test = new_outputPath / 'test.txt'
-            try:
-                write_test.touch()
-            except IOError:
-                raise ValueError('We don\'t have permission to write to the output path.')
-            else:
-                # Clean up if we can write to the path
-                write_test.unlink()
+            # Clean up if we can write to the path
+            write_test.unlink()
         self._progressFile = new_outputPath / 'sim_progress.json'
         self._outputPath = new_outputPath
+
+    @property
+    def outputFormats(self):
+        return self._outputFormats
+
+    @outputFormats.setter
+    def outputFormats(self, new_outputFormats):
+        self._outputFormats = new_outputFormats
 
     # ----------------------------------------------------------------------
     def reset(self, keepParameters=False):
@@ -1650,6 +1662,30 @@ class flight(object):
         # os.path.isfile doesn't check if the file has been written recently.
         # logger.debug('Output file {} generated.')
 
+
+    def handle_format_specifier(self, dir: Path, specifier: str | None):
+        def make_filename(extension):
+            stem = 'out'
+            return f'{stem}.{extension}'
+        if specifier is None:
+            # In the case that no extension is provided, use the base name as
+            # the folder name as write all types to this file
+            formats = ['json', 'kml', 'kmz', 'csv', 'csv.zip']
+        elif specifier == 'web':
+            # If file has extension web, store json, kml and csv.gz
+            formats = ['json', 'kml', 'csv.zip']
+        else:
+            # Just one format
+            formats = [specifier]
+        for format in formats:
+            path = dir / make_filename(format)
+            try:
+                self.write(path)
+            except Exception:
+                logger.exception("flight simulator failed to write output {} file".format(format))
+                raise
+
+
     def postflight(self):
         """
         After all the simulations have been executed, this method puts the
@@ -1662,38 +1698,15 @@ class flight(object):
         --------
         astra.simulator.flight, self.outputFile
         """
-        baseName, data_format = os.path.splitext(self.outputPath)
+        output_path = self.outputPath
+        specifiers = self.outputFormats
 
-        if data_format == '':
-            # In the case that no extension is provided, use the base name as
-            # the folder name as write all types to this file
-            try:
-                os.mkdir(self.outputPath)
-            except OSError:
-                if not os.path.isdir(self.outputPath):
-                    logger.error('The specified output path already exists. Change it or add an extension.')
-
-            for data_format in ['json', 'kml', 'kmz', 'csv', 'csv.zip']:
-                path = os.path.join(baseName, 'out' + '.' + data_format)
-                try:
-                    self.write(path)
-                except Exception:
-                    logger.exception("flight simulator failed to write output {} file".format(data_format))
-                    raise
-        elif data_format == '.web':
-            # If file has extension web, store json, kml and csv.gz
-
-            for data_format in ['json', 'kml', 'csv.zip']:
-                path = baseName + '.' + data_format
-                try:
-                    self.write(path)
-                except Exception:
-                    logger.exception("flight simulator failed to write output {} file".format(data_format))
-                    raise
-
+        if specifiers is None or len(specifiers) == 0:
+            self.handle_format_specifier(output_path, None)
         else:
-            # Only store the required one
-            self.write(self.outputPath)
+            for specifier in specifiers:
+                self.handle_format_specifier(output_path, specifier)
+
 
     def updateProgress(self, value, action):
         """

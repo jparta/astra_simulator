@@ -4,6 +4,7 @@
 # @Last Modified by:   p-chambers
 # @Last Modified time: 2017-06-22 15:01:12
 import os
+from pathlib import Path
 import re
 import tempfile
 from datetime import datetime, timedelta
@@ -75,7 +76,7 @@ def kml_close_enough(kml_orig_filepath: str, kml_newer_filepath: str, max_relati
     # Check that the launch coordinates are the same
     if launch_orig.wkt != launch_newer.wkt:
         return False
-    
+
     # For each flight, calculate the distance from the launch point to the
     # landing point. If the relative error between the two distances is less
     # than max_relative_error, then the two flights are considered to be
@@ -90,7 +91,7 @@ def kml_close_enough(kml_orig_filepath: str, kml_newer_filepath: str, max_relati
         if relative_error > max_relative_error:
             return False
     return True
-            
+
 
 @pytest.fixture(params=[
   # These parameters are designed to break the code - hopefully no one makes
@@ -123,7 +124,7 @@ def example_inputs(request):
               'parachuteModel': 'SPH36',
               'trainEquivSphereDiam': 0.1,
               'outputFile': output_dir}
-    inputs[request.param[0]] = request.param[1] 
+    inputs[request.param[0]] = request.param[1]
     return inputs
 
 
@@ -154,7 +155,7 @@ def test_forecast_example_inputs():
 
     simEnvironment.loadFromNOAAFiles(fileDict)
 
-    output_dir = tempfile.mktemp(suffix='')
+    output_dir = Path(tempfile.mktemp(suffix='')) / 'outputs'
 
     inputs = {'environment': simEnvironment,
               'balloonGasType': 'Helium',
