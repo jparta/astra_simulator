@@ -445,7 +445,7 @@ class flight(object):
             log_lev = logging.WARNING
 
         if outputPath:
-            Path(outputPath).mkdir(parents=True, exist_ok=True)
+            Path(outputPath).parent.mkdir(parents=True, exist_ok=True)
 
         if log_to_file:
             # Reset the app logger handlers and reset basic config
