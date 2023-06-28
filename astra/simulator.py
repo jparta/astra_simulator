@@ -68,7 +68,7 @@ class flightProfile(object):
         highest altitude in altitudeProfile
     hasBurst : bool
         Set to True if the balloon has burst
-    balloonModel : string 
+    balloonModel : string
         Model of the balloon used for this flight
         (see astra.available_balloons_parachutes.balloons)
     highestAltitude : scalar
@@ -297,7 +297,7 @@ class flightProfile(object):
 class flight(object):
     """Primary Balloon flight simulation class.
 
-    Provides methods for solving the ascent rate equation given in [1]_, 
+    Provides methods for solving the ascent rate equation given in [1]_,
 
     Parameters
     ----------
@@ -394,10 +394,10 @@ class flight(object):
 
     References
     ----------
-    .. [1] 
-        Sobester, A., Czerski, H.,  Zapponi, N., and Castro, I. P., 
+    .. [1]
+        Sobester, A., Czerski, H.,  Zapponi, N., and Castro, I. P.,
         "High Altitude Gas Balloon Trajectory Prediction - a Monte Carlo Model".
-         AIAA Journal, 52, (4), 2014, pp. 832-842. (doi:10.2514/1.J052900 
+         AIAA Journal, 52, (4), 2014, pp. 832-842. (doi:10.2514/1.J052900
          <http://dx.doi.org/10.2514/1.J052900>).
 
     Notes
@@ -482,7 +482,7 @@ class flight(object):
         # User defined variables
         # Note: As setters are used in some of these variables, there is a
         # small amount of order dependency here: e.g., self.payloadtrainWeight
-        # must be defined before nozzleLift 
+        # must be defined before nozzleLift
         self.environment = environment                # weather object
         self.balloonGasType = balloonGasType
         self._numberOfSimRuns = numberOfSimRuns       # Don't use the setter here: circular dependency with self.balloonModel
@@ -501,7 +501,7 @@ class flight(object):
         self.cutdownAltitude = cutdownAltitude
         self.cutdownTimeout = cutdownTimeout
 
-        # Set the 
+        # Set the
         self.profileClass = flightProfile
 
         if self.cutdownTimeout != numpy.inf:
@@ -560,7 +560,7 @@ class flight(object):
         longitude, and elevation based on values in this environment.
         """
         return self._environment
-    
+
     @environment.setter
     def environment(self, new_environment):
         if isinstance(new_environment, EmptyEnvironment):
@@ -614,7 +614,7 @@ class flight(object):
     @property
     def balloonModel(self):
         """balloon model property (string)
-        
+
         Setting this value also updates several internal balloon data criteria,
         including balloon mass, weibull distribution of burst diameter, and
         the monte carlo array used by :func:`~astra.simulator.flight.run`
@@ -714,12 +714,12 @@ class flight(object):
     def outputPath(self):
         """output file property
 
-        Setting this value will attempt to write to the output filepath, 
+        Setting this value will attempt to write to the output filepath,
         before deleting the test file instantly. This value will later be
         used after a run to write all results to file.
         """
         return self._outputPath
-    
+
     @outputPath.setter
     def outputPath(self, new_outputPath):
         new_outputPath = Path(new_outputPath)
@@ -736,7 +736,7 @@ class flight(object):
                 write_test.unlink()
         self._progressFile = new_outputPath / 'sim_progress.json'
         self._outputPath = new_outputPath
-    
+
     # ----------------------------------------------------------------------
     def reset(self, keepParameters=False):
         """
@@ -802,7 +802,7 @@ class flight(object):
         # Use environment's progress handler if available
         progressHandler = self._environment.progressHandler or self.updateProgress
         progressHandler(1.0, 2)
-        
+
         self._totalStepsForProgress = self.numberOfSimRuns + 1
 
         # _________________________________________________________________ #
@@ -817,7 +817,7 @@ class flight(object):
             logger.exception(
                 "Error during preflight validations and calculations:")
             raise
-        
+
         progressHandler(0.0, 0)
 
         # _________________________________________________________________ #
