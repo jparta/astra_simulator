@@ -176,6 +176,53 @@ def test_forecast_example_inputs():
     assert(kml_close_enough(test_fname, reference_fname))
 
 
+def test_specific_file_output():
+    """Test that output file formats can be specified without errors being raised"""
+    def get_extensions_of_files_in_dir(directory):
+        """Returns a list of the extensions of files in a directory"""
+        return [file.suffix for file in Path(directory).iterdir()]
+
+    np.random.seed(42)     # This should not be changed
+    launch_datetime = datetime(2017, 4, 24,hour=12,minute=15)
+    simEnvironment = forecastEnvironment(launchSiteLat=29.2108,      # deg
+                                         launchSiteLon=-81.0228,     # deg
+                                         launchSiteElev=4,           # m
+                                         launchTime=launch_datetime,
+                                         forceNonHD=True,
+                                         debugging=True)
+
+    # Set up the example input data files (from 24/04/2017, Daytona Beach)
+    fileDict = {}
+    for paramName in GFS_Handler.weatherParameters.keys():
+        fileDict[paramName] = os.path.join(os.path.dirname(astra.__file__),
+            '../test/example_data',
+            'gfs_0p50_06z.ascii?{}[12:15][0:46][231:245][545:571]'.format(paramName))
+
+
+    simEnvironment.loadFromNOAAFiles(fileDict)
+
+    output_dir = Path(tempfile.mktemp(suffix='')) / 'outputs'
+
+    output_formats = ('json', 'kml', 'csv')
+
+    inputs = {'environment': simEnvironment,
+              'balloonGasType': 'Helium',
+              'balloonModel': 'TA800',
+              'nozzleLift': 1,                  # kg
+              'payloadTrainWeight': 0.433,      # kg
+              'parachuteModel': 'SPH36',
+              'trainEquivSphereDiam': 0.1,
+              'numberOfSimRuns': 1,
+              'outputPath': output_dir,
+              'outputFormats': output_formats}
+    simFlight = flight(**inputs)
+    simFlight.run()
+
+    output_extensions = get_extensions_of_files_in_dir(output_dir)
+    actually_outputted_formats = [ext.lstrip('.') for ext in output_extensions]
+    assert(all([ext in actually_outputted_formats for ext in output_formats]))
+
+
 def test_invalid_inputs(example_inputs):
     inputs = example_inputs
     with pytest.raises(Exception) as e_info:
