@@ -456,7 +456,7 @@ class flight(object):
             for handler in logging.root.handlers[:]:
                 logging.root.removeHandler(handler)
 
-            log_file = Path(outputPath) / 'astra_py_error_debug.log'
+            log_file = Path(outputPath).parent / 'astra_py_error_debug.log'
             # Set a maximum log file size of 5MB:
             handler = logging.handlers.RotatingFileHandler(log_file,
                 mode='a',
