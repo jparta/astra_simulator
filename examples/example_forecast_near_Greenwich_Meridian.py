@@ -13,10 +13,12 @@ Niccolo' Zapponi, nz1g10@soton.ac.uk, 22/04/2013
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
+import shutil
 
 import numpy as np
 
 from astra.simulator import flight, forecastEnvironment
+from examples.example_utils import rmtree_error_handler_disregard_file_not_found
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
@@ -36,6 +38,7 @@ if __name__ == "__main__":
 
     output_path = Path(__file__).parent / 'outputs'
     outputPath = output_path / 'astra_output_GM'
+    shutil.rmtree(outputPath, onerror=rmtree_error_handler_disregard_file_not_found)
 
     # Launch setup
     simFlight = flight(environment=simEnvironment,

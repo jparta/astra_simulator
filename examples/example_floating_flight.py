@@ -1,8 +1,10 @@
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
+import shutil
 
 from astra.simulator import flight, forecastEnvironment
+from examples.example_utils import rmtree_error_handler_disregard_file_not_found
 
 if __name__ == "__main__":
     # Environment parameters
@@ -26,6 +28,7 @@ if __name__ == "__main__":
 
     output_path = Path(__file__).parent / 'outputs'
     outputPath = output_path / 'astra_output_floating'
+    shutil.rmtree(outputPath, onerror=rmtree_error_handler_disregard_file_not_found)
 
     # Launch setup
     simFlight = flight(environment=simEnvironment,

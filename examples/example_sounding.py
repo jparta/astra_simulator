@@ -7,9 +7,11 @@ University of Southampton
 """
 from datetime import datetime
 from pathlib import Path
+import shutil
 
 from astra.simulator import flight
 from astra.weather import soundingEnvironment
+from examples.example_utils import rmtree_error_handler_disregard_file_not_found
 
 if __name__ == "__main__":
     soundingFile = Path(__file__).parent / 'sp.sounding'
@@ -28,6 +30,7 @@ if __name__ == "__main__":
 
     output_path = Path(__file__).parent / 'outputs'
     outputPath = output_path / 'astra_output_sounding'
+    shutil.rmtree(outputPath, onerror=rmtree_error_handler_disregard_file_not_found)
 
     # Launch setup
     simFlight = flight(environment=simEnvironment,

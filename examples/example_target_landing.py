@@ -17,10 +17,13 @@ Niccolo' Zapponi, nz1g10@soton.ac.uk, 22/04/2013
 """
 import logging
 from datetime import datetime, timedelta
+from pathlib import Path
+import shutil
 
 import numpy as np
 
 from astra.target_landing import targetFlight
+from examples.example_utils import rmtree_error_handler_disregard_file_not_found
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
@@ -35,6 +38,10 @@ if __name__ == "__main__":
     targetLat = 51.077214
     targetLon = -1.1866875398775423
     targetElev = 137
+
+    output_path = Path(__file__).parent / 'outputs'
+    outputPath = output_path / 'astra_output_target_landing'
+    shutil.rmtree(outputPath, onerror=rmtree_error_handler_disregard_file_not_found)
 
     # Launch setup
     simulator = targetFlight(start_dateTime=launch_datetime,
@@ -55,6 +62,7 @@ if __name__ == "__main__":
                              debugging=True,
                              log_to_file=False,
                              progress_to_file=False,
+                             outputFile=outputPath,
                             )
 
     # Run the simulation

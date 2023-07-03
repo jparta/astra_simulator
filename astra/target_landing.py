@@ -21,6 +21,7 @@ from bisect import bisect_right
 from copy import deepcopy
 from datetime import datetime, timedelta
 from operator import eq
+from tempfile import TemporaryDirectory
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -61,7 +62,7 @@ def interpIndividual(bounds, individual):
 def checkBounds(bmin, bmax):
     """Returns a decorator for use with deap, which ensures that inputs to the
     decorated function are within the bounds of bmin, bmax.
-    
+
     Inputs of the wrapped function will snap to the nearest bound (bmin or bmax)
     if outside these limits."""
     def decorator(func):
@@ -163,7 +164,7 @@ class targetFlight(flight):
         will be sampled within this range.
     weights : tuple of signed int
         The weights for each of the objectives assessed by the targetDistance
-        function. 
+        function.
     [requestSimultaneous] : bool (default True)
         If True, populate a dictionary of responses from the web download
         requests, then process the data. If False, each response will be
@@ -192,23 +193,10 @@ class targetFlight(flight):
     [excessPressureCoeff] : scalar (default 1)
         TODO: the coefficient of excess pressure of the balloon on the gas
         inside. Currently unused
-    [outputFile] : string (default '')
-        the path of the output file containing all the simulation data. The
-        format of the file to be generated depends on the extension. Available
-        formats are,
-        'json' : JavaScript data structure, used to provide data to the
-            web interface
-        'kml' : Standard format for geographical data. It can be opened by
-            Google Maps, Google Earth, etc
-        'kmz' : Zipped kml, good for online use (eg Google Maps). The
-            file size is significantly reduced;
-        'csv' : Comma separated values, the preferred format for further
-            data processing with any other software;
-        'csv.zip' : Zipped csv file;
-        'web' : This stores json, kml and csv.zip in the same folder
-            requested. This is used by the web interface to prepare files
-            for export. If no extension is found, a new folder is created
-            and ALL output formats are stored.
+    [outputFile] : string (default temp directory)
+        The path of the output directory where simulation data and log files
+        will be stored. To make sure nothing is overwritten, the directory
+        must not exist initially.
     [debugging] : bool (default False)
         if TRUE, all the information regarding the simulation will be logged.
         If it's set to FALSE, only errors will be logged.
@@ -259,17 +247,22 @@ class targetFlight(flight):
                  floatingAltitude=None,
                  ventingStart=1000,
                  excessPressureCoeff=1.,
-                 outputFile='',
+                 outputFile=None,
                  debugging=False,
                  log_to_file=False,
                  progress_to_file=False,
                  launchSiteForecasts=[]):
 
+        if outputFile is None:
+            tempdir = TemporaryDirectory()
+            outputFile = tempdir.name
+
         super(targetFlight, self).__init__(environment=EmptyEnvironment(),
                                 balloonGasType=balloonGasType,
                                 balloonModel=balloonModel,
                                 nozzleLift=nozzleLift,
-                                payloadTrainWeight=payloadTrainWeight, 
+                                payloadTrainWeight=payloadTrainWeight,
+                                outputPath=outputFile,
                                 maxFlightTime=maxFlightTime,
                                 parachuteModel=parachuteModel,
                                 numberOfSimRuns=1,      # This uses mean params (not MC)
@@ -296,10 +289,10 @@ class targetFlight(flight):
         # Use a maximum lateral upper atmospheric speed to determine if this
         # flight is feasible, given an 'as the crow flies' flight entirely in
         # the jet stream, assuming max speed of 200 km/hr
-        self.maxLateralSpeed = 200    # m/s 
+        self.maxLateralSpeed = 200    # m/s
         self.cutoffDistance = self.maxLateralSpeed * self.maxFlightTime / 3600.
 
-        # Set some allowable modes of flight (these are used by the 
+        # Set some allowable modes of flight (these are used by the
         # targetDistance function)
         self.flightModes = ['standard', 'cutdown', 'floating']
 
@@ -336,7 +329,7 @@ class targetFlight(flight):
         self.Xs = []
 
         self.flightFitness = deepcopy(creator.flightFitness)
-        
+
         # This will update the weights used by creator.flightFitness, and hence
         # the order of the individuals added to the ParetoFront by the
         # targetDistance function.
@@ -398,7 +391,7 @@ class targetFlight(flight):
 
         logger.debug('Arguments in the objective function are: {}'.format(remaining_args))
 
-        # Store the list of ordered variable names that represent data in the 
+        # Store the list of ordered variable names that represent data in the
         # input X vector
         self.variables = remaining_args
 
@@ -443,7 +436,7 @@ class targetFlight(flight):
                 'standard' = standard ascent, burst, descent
                 'floating' = ascent with venting, float at deviceActivationAltitude,
                     burst after floatDuration seconds, then descend
-                'cutdown' : ascend up to deviceActivationAltitude, force burst, 
+                'cutdown' : ascend up to deviceActivationAltitude, force burst,
                     then descend
         [flexibleBallon] : bool (default False)
             If False, Removes the nominalBurstDia parameter from
@@ -469,7 +462,7 @@ class targetFlight(flight):
         -------
         objective : function
             Function that has as many arguments as there are in the boundsDict.
-            All other arguments passed to self.targetDistance are kept as 
+            All other arguments passed to self.targetDistance are kept as
             constants. For the names of each parameter in this objective
             function, refer to self.variables.
         boundsDict : list
@@ -593,8 +586,8 @@ class targetFlight(flight):
             'standard' = standard ascent, burst, descent
             'floating' = ascent with venting, float at deviceActivationAltitude,
                 burst after floatDuration seconds, then descend
-            'cutdown' : ascend up to deviceActivationAltitude, force burst, 
-                then descend            
+            'cutdown' : ascend up to deviceActivationAltitude, force burst,
+                then descend
         deviceActivationAltitude : scalar
             The altitude at which to activate the altitude control device
             defined by the flightMode.
@@ -609,7 +602,7 @@ class targetFlight(flight):
             Returns the sum of self.weights * flightProfile.fitness.values.
             This is useful for scipy, or a weighted sum algorithm, but deap
             is capable of working with a tuple of multiple objectives.
-        
+
         Returns
         -------
         [values] : tuple
@@ -676,7 +669,7 @@ class targetFlight(flight):
         # Penalty for flights not bursting within the time limit
         if not resultProfile.hasBurst:
             fitnessArr += [5e6] * Nobjs
-        
+
         # Distance objective (normalised) - CURRENTLY REMOVING NORMALISATION
         landing_lat = resultProfile.latitudeProfile[-1]
         landing_lon = resultProfile.longitudeProfile[-1]
@@ -745,8 +738,8 @@ class targetFlight(flight):
             'standard' = standard ascent, burst, descent
             'floating' = ascent with venting, float at deviceActivationAltitude,
                 burst after floatDuration seconds, then descend
-            'cutdown' : ascend up to deviceActivationAltitude, force burst, 
-                then descend            
+            'cutdown' : ascend up to deviceActivationAltitude, force burst,
+                then descend
         deviceActivationAltitude : scalar
             The altitude at which to activate the altitude control device
             defined by the flightMode.
@@ -757,7 +750,7 @@ class targetFlight(flight):
             If True, all flight profiles are added to self.results. Otherwise,
             only the Pareto Front of non dominated individuals is stored.
         """
-        # Set up the arrays where results will be stored. Also storing the 
+        # Set up the arrays where results will be stored. Also storing the
         # multiple objectives.
         if not storeAll:
             self.results = dptools.ParetoFront()
@@ -837,8 +830,8 @@ class targetFlight(flight):
             'standard' = standard ascent, burst, descent
             'floating' = ascent with venting, float at deviceActivationAltitude,
                 burst after floatDuration seconds, then descend
-            'cutdown' : ascend up to deviceActivationAltitude, force burst, 
-                then descend            
+            'cutdown' : ascend up to deviceActivationAltitude, force burst,
+                then descend
         deviceActivationAltitude : scalar
             The altitude at which to activate the altitude control device
             defined by the flightMode.
@@ -996,7 +989,7 @@ class targetFlight(flight):
                 sliceUnits[sliceParam], Nslices))
 
         logger.debug("Running brute force calculation")
-        
+
         points = np.column_stack([X.ravel(), Y.ravel(), Z.ravel()])
 
         # Main calculation here
@@ -1031,7 +1024,7 @@ class targetFlight(flight):
             'standard' = standard ascent, burst, descent
             'floating' = ascent with venting, float at deviceActivationAltitude,
                 burst after floatDuration seconds, then descend
-            'cutdown' : ascend up to deviceActivationAltitude, force burst, 
+            'cutdown' : ascend up to deviceActivationAltitude, force burst,
                 then descend
         flexibleBalloon : bool (default False)
             Switches on the balloonNominalBurstDia as a metric for the
@@ -1059,12 +1052,12 @@ class targetFlight(flight):
             if provided, the value of self.weights will be overridden, changing
             the weightings used in the objective function and Pareto Front
             ordering. See self.weights.
-        [**kwargs] : 
+        [**kwargs] :
             extra  keyword args are passed to the underlying function,
-            i.e., scipy.optimize.minimize for methods 'nelder-mead' or 'l-bfgs-b', 
+            i.e., scipy.optimize.minimize for methods 'nelder-mead' or 'l-bfgs-b',
             or scipy.differential_evolution for 'DE'. Additional kwargs are
             not used for the 'GA' method.
-        
+
         See Also
         --------
         targetFlight.targetDistance
@@ -1072,7 +1065,7 @@ class targetFlight(flight):
         # run the simulation every hour over the time window. Note that we need
         # to also get weather to cover a flight of duration <maxFlightTime>,
         # starting at the end of the window.
-        # scipy.optimize.fmin_ 
+        # scipy.optimize.fmin_
 
         self.results = dptools.ParetoFront()
         # Store all objective scores, for Pareto plotting
@@ -1082,7 +1075,7 @@ class targetFlight(flight):
 
         if weights:
             self.weights = weights
- 
+
          # Need to return a tuple of fitness for ga, or a weighted sum for scipy:
         returnWeightedSum = (method.lower() != 'ga')
 
@@ -1151,7 +1144,7 @@ class targetFlight(flight):
 
             toolbox.decorate("mate", checkBounds(0, 1))
             toolbox.decorate("mutate", checkBounds(0, 1))
-            
+
             if seed:
                 random.seed(seed)
 
@@ -1162,18 +1155,18 @@ class targetFlight(flight):
             stats.register("std", np.std, axis=0)
             stats.register("min", np.min, axis=0)
             stats.register("max", np.max, axis=0)
-            
+
             # Limit to 1000 evals (about 25 minutes)
             maxevals = 1500
             cxpb = 0.5
             mutpb = 0.2
-            
+
             # Max number of evaluations is (on average) the probability of replacement
             # times by the population size, for each generation: inverse
             ngen = int(round(maxevals / (MU * (cxpb + mutpb))))
-                              
-            algorithms.eaMuPlusLambda(pop, toolbox, mu=MU, lambda_=LAMBDA, 
-                                      cxpb=cxpb, mutpb=mutpb, ngen=ngen, 
+
+            algorithms.eaMuPlusLambda(pop, toolbox, mu=MU, lambda_=LAMBDA,
+                                      cxpb=cxpb, mutpb=mutpb, ngen=ngen,
                                       stats=stats)
 
         else:
@@ -1182,7 +1175,7 @@ class targetFlight(flight):
 
     def plotPaths3D(self, fig=None, ax=None):
         """Plots the resulting trajectories contained in self.results, along
-        with target 
+        with target
 
         This method should be used after calls to self.targetDistance, or
         any method in optimizeTargetLandingSite, since these will populate
@@ -1224,12 +1217,12 @@ class targetFlight(flight):
         lons = [prof.longitudeProfile[-1] for prof in self.results]
 
         ax.plot(lats, lons, landingMarker, label='Trajectory simulations')
-            
+
         best_lat, best_lon, best_alt = self.bestProfile.latitudeProfile, self.bestProfile.longitudeProfile,self.bestProfile.altitudeProfile
         m = ax.plot(self.targetLat, self.targetLon, 'gx', label='Target')
         ax.plot(self.launchSites[0][0], self.launchSites[0][1], 'go', label='Launch Site')
         ax.plot(best_lat[-1], best_lon[-1], 'kx', label='Best')
-            
+
         legend = ax.legend(loc='lower left')
 
         fig.show()
@@ -1258,7 +1251,7 @@ class targetFlight(flight):
         -----
         See /examples/notebooks/example_target_landing.ipynb for usage
         """
-        
+
         if not fig:
             fig = plt.figure()
         if not ax:
@@ -1277,7 +1270,7 @@ class targetFlight(flight):
             box = ax.get_position()
             ax.set_position([box.x0, box.y0,
                              box.width, box.height * 0.9])
-            
+
         CS = ax.contour(dateTimeVector, nozzleLiftVector, scores, label='Landing sites'+appendLabel, **kwargs)
 
         if bestProfile:
@@ -1340,7 +1333,7 @@ class targetFlight(flight):
 
             # ax.set_xlim(date_start, date_end)
             # fig.autofmt_xdate()
-        
+
         # Need to convert to unix time for 3d plotting, since matplotlib tries
         # to autoscale_xyz, which doesn't work on non float types
         tstamps = [dtime.timestamp() for dtime in dateTimeVector]
@@ -1354,7 +1347,7 @@ class targetFlight(flight):
                 [-sum(bestProfile.fitness.wvalues)], bestMarker, markersize=8,
                 label='min' + appendLabel)
 
-        # Manually set up x ticks, since 
+        # Manually set up x ticks, since
         # ax.set_xticks()
 
         # Add a color bar which maps values to colors.
@@ -1390,7 +1383,7 @@ class targetFlight(flight):
             box = ax.get_position()
             ax.set_position([box.x0, box.y0,
                              box.width, box.height * 0.9])
- 
+
         dts, nozzleLifts = zip(*self.Xs)
         dateTimes = [self.start_dateTime + timedelta(hours=dt) for dt in dts]
         ax.plot(dateTimes, nozzleLifts, marker, label='Landing sites'+appendLabel)
@@ -1410,10 +1403,10 @@ class targetFlight(flight):
 
         Requires a call to any optimization or bruteForce method, populating
         self.results.
-        
+
         Notes
         -----
-        * Only works for 2 or 3 objectives. 
+        * Only works for 2 or 3 objectives.
         * Assumes that all fitnesses have the same number of values and weightings
         """
         fitnesses = self.fitnesses
@@ -1421,13 +1414,13 @@ class targetFlight(flight):
         nonzero_indices = np.nonzero(fitnesses[0].weights)[0]
         assert(len(nonzero_indices) >= 2),\
             "Input fitness array has less than 2 weighted objectives: no useful Pareto solutions."
-            
+
         # Dictionary of weight_index : label pairs. Extract the axes labels for the non zero weighted vars
         axlabelsAvailable = {0: r'$\Delta (km)$',
                            1: r'$m_{gas} (kg)$',
                            2: r'$t (seconds))$'}
         axlabels = [axlabelsAvailable[idx] for idx in nonzero_indices]
-        
+
         if len(nonzero_indices) == 2:
             fig = plt.figure()
             ax = fig.add_subplot(111)
@@ -1449,7 +1442,7 @@ class targetFlight(flight):
             ax.set_xlabel(axlabels[0])
             ax.set_ylabel(axlabels[1])
             ax.legend(loc='upper right')
-            
+
         elif len(nonzero_indices) == 3:
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
@@ -1460,10 +1453,10 @@ class targetFlight(flight):
             ax.scatter(f1, f2, f3, label='Brute Force Points')
             pareto_x, pareto_y, pareto_z = zip(*[profile.fitness.values for profile in self.results])
             pareto_array = np.array([pareto_x, pareto_y, pareto_z]).T
-        
+
             ax.scatter(pareto_array[:, 0], pareto_array[:, 1], pareto_array[:, 2])#, facecolors='k',
     #                    label='Pareto points')
-        
+
             # Plot the Pareto surface triangulation
             triang = mtri.Triangulation(pareto_array[:,0],pareto_array[:,1])
             ax.plot_trisurf(triang,pareto_array[:,2],color='red', alpha=0.5)
@@ -1476,9 +1469,9 @@ class targetFlight(flight):
             ax.set_xlabel(axlabels[0])
             ax.set_ylabel(axlabels[1])
             ax.set_zlabel(axlabels[2])
-            ax.legend(loc='upper right')        
-        
+            ax.legend(loc='upper right')
+
         else:
             raise ValueError("Can't support plotting {}D Pareto front. Adjust weightings.".format(len(nonzero_indices)))
-        
+
             return None

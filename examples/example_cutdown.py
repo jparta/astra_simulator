@@ -4,6 +4,7 @@
 # @Last Modified by:   p-chambers
 # @Last Modified time: 2017-05-18 18:15:48
 from pathlib import Path
+import shutil
 
 if __name__ == "__main__":
     import os
@@ -11,6 +12,7 @@ if __name__ == "__main__":
     from datetime import datetime, timedelta
     sys.path.append(os.path.abspath('../astra'))
     from astra.simulator import flight, forecastEnvironment
+    from examples.example_utils import rmtree_error_handler_disregard_file_not_found
 
     # Environment parameters
     # Launch site: Daytona Beach, FL
@@ -27,6 +29,7 @@ if __name__ == "__main__":
     # Output directory in this directory
     output_path = Path(__file__).parent / 'outputs'
     outputPath = output_path / 'astra_output_cutdown'
+    shutil.rmtree(outputPath, onerror=rmtree_error_handler_disregard_file_not_found)
 
     # Flight parameters
     flight_params = {
