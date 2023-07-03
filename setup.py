@@ -25,10 +25,10 @@ setup(
     # package_data={'': ['*.dat']},
     install_requires=[
         "deap ~= 1.3",
-        "grequests ~= 0.6",
         "matplotlib ~= 3.7",
         "numpy ~= 1.24",
         "pytz >= 2023",
+        "requests_futures",
         "scipy ~= 1.10",
         "six ~= 1.16",
         "timezonefinder ~= 6.2",

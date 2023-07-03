@@ -2,7 +2,7 @@
 
 """
 Module containing the classes for interacting with the NOAA's Global Forecast
-System. 
+System.
 
 GFS_Handler is the primary class used outside of this module. See class
 documentation for use
@@ -12,12 +12,13 @@ University of Southampton
 import itertools
 import logging
 import urllib.parse
+from concurrent.futures import as_completed
 from datetime import datetime, timedelta
 from math import ceil, floor
 
-import grequests
 import numpy
 import pytz
+from requests_futures.sessions import FuturesSession
 from scipy.interpolate import UnivariateSpline
 from six.moves import builtins, range
 from six.moves.urllib.request import urlopen
@@ -61,9 +62,13 @@ def get_urldict_async(urls_dict, hooks_dict=None):
     """
     # first get all urls as a list
     urls_list = list(itertools.chain.from_iterable(urls_dict.values()))
-    reqs = (grequests.get(u, hooks=hooks_dict) for u in urls_list)
-    responses = grequests.map(reqs)
-    results = {urllib.parse.unquote(r.url): r.text for r in responses}
+    with FuturesSession() as session:
+        futures = [session.get(u, hooks=hooks_dict) for u in urls_list]
+        results = {}
+        for future in as_completed(futures):
+            resp = future.result()
+            unquoted_url = urllib.parse.unquote(resp.url)
+            results[unquoted_url] = resp.text
     if any(result[0] == "<" for result in results.values()):
         logger.debug("GFS cycle not found.")
         return
@@ -294,7 +299,7 @@ class GFS_Handler(object):
             # Check if crossing the Greenwich meridian and split the requests
             # If the Greenwich meridian is being crossed, the left bound of the
             # longitude interval will have a higher value than the right one
-            # (in HD: Western hemisphere [360:719], Eastern hemisphere 
+            # (in HD: Western hemisphere [360:719], Eastern hemisphere
             # [0:359]), so if the difference between the right and the left one
             # is negative, the Greenwich meridian is being crossed
             if self.requestLongitudes[0][1] - self.requestLongitudes[0][0] < 0:
@@ -372,7 +377,7 @@ class GFS_Handler(object):
             The cycle datetime for which to obtain the forecast
         requestTimeSlice : list of int, length 2
             The [start, end] window of time for which to get data (GFS units, 3h steps)
-        
+
         Returns
         -------
         dataResults : list
@@ -637,7 +642,7 @@ class GFS_Handler(object):
                                 data_matrix, data_map
                         else:
                             raise RuntimeError("'{}' data failed to download for this cycle. Cannot proceed.".format(requestVar))
-                            
+
         # If it got here, the GFS was found: break the outer loop
         return data_matrices, data_maps
 
@@ -658,7 +663,7 @@ class GFS_Handler(object):
             The (assumed) earliest available weather forecast date and time.
             Requests will begin searching for valid datasets in reversing
             6 hour intervals from this date time.
-        progressHandler : function 
+        progressHandler : function
             See simulator.updateProgress
 
         Returns
@@ -832,7 +837,7 @@ class GFS_Handler(object):
         fileDict : :obj:`dict`
             A dictionary of noaa_name: filename pairs, indicating which file
             should be used for each noaa variable. The following keys must be
-            defined in this dictionary: 'tmpprs' (Temperature), 
+            defined in this dictionary: 'tmpprs' (Temperature),
             'hgtprs' (Altitude), 'ugrdprs' (U Winds), 'vgrdprs' (V Winds)
 
         lat : float
@@ -1080,7 +1085,7 @@ class GFS_Handler(object):
             resultsMap.fwdLongitude = [float(lon) - 360 if float(lon) > 180 else float(lon) for lon in
                                        dataLines[-2].split(',')]
             resultsMap.revLongitude = {lon: ind for (lon, ind) in
-                                       zip(resultsMap.fwdLongitude, 
+                                       zip(resultsMap.fwdLongitude,
                                            range(len(resultsMap.fwdLongitude)))}
 
             resultsMap.fwdPressure = [float(press) for press in dataLines[-6].split(',')]
@@ -1189,7 +1194,7 @@ class GFS_Handler(object):
                     self.altitudeMap.fwdLatitude[idxLat[0]]))
             )
             fracLon = 1 - (abs((lon - self.altitudeMap.fwdLongitude[idxLon[0]]) /
-                (self.altitudeMap.fwdLongitude[idxLon[1]] - 
+                (self.altitudeMap.fwdLongitude[idxLon[1]] -
                     self.altitudeMap.fwdLongitude[idxLon[0]]))
             )
             fracTime = 1 - (abs((time - self.altitudeMap.fwdTime[idxTime[0]]) /
@@ -1262,21 +1267,21 @@ class GFS_Map(object):
     Attributes
     ----------
     fwdLatitude : list
-        Forward list for mapping GFS indices to real world coordinates 
+        Forward list for mapping GFS indices to real world coordinates
     fwdLongitude : list
-        Forward list for mapping GFS indices to real world coordinates 
+        Forward list for mapping GFS indices to real world coordinates
     fwdPressure : list
-        Forward list for mapping GFS indices to real world coordinates 
+        Forward list for mapping GFS indices to real world coordinates
     fwdTime : list
-        Forward list for mapping GFS indices to real world coordinates 
+        Forward list for mapping GFS indices to real world coordinates
     revLatitude : dict
-        Forward list for mapping GFS indices to real world coordinates 
+        Forward list for mapping GFS indices to real world coordinates
     revLongitude : dict
-        Forward list for mapping GFS indices to real world coordinates 
+        Forward list for mapping GFS indices to real world coordinates
     revPressure : dict
-        Forward list for mapping GFS indices to real world coordinates 
+        Forward list for mapping GFS indices to real world coordinates
     revTime : dict
-        Forward list for mapping GFS indices to real world coordinates 
+        Forward list for mapping GFS indices to real world coordinates
     mappingCoordinates : list
         4D real world Interpolation coordinates for each value in the data
         matrix
@@ -1341,7 +1346,7 @@ class GFS_Map(object):
 
     def mapCoordinates(self):
         """Prepare the mappingCoordinates variable by putting together all
-        forward and reverse maps. 
+        forward and reverse maps.
 
         Used by the Linear4DInterpolator to access interpolation data maps.
         """
