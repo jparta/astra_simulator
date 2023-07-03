@@ -310,6 +310,10 @@ class flight(object):
         nozzle lift in kg
     payloadTrainWeight : scalar
         weight of the payload train in kg
+    outputPath : str or pathlib.Path
+        The path of the output directory where simulation data and log files
+        will be stored. To make sure nothing is overwritten, the directory
+        must not exist initially.
     [environment] : :obj:`~astra.weather.environment` object (default None)
         either soundingEnvironment or forecastEnvironment) already configured
         with the environmental model. See the Weather Module for more
@@ -350,10 +354,6 @@ class flight(object):
     [cutdownTimeout] : scalar (default np.inf)
         Time is seconds after launch, at which to trigger a burst if
         cutdown is True.
-    [outputPath] : str or pathlib.Path (default '')
-        The path of the output directory where simulation data and log files
-        will be stored. To make sure nothing is overwritten, the directory
-        must not exist initially.
     [outputFormats] : tuple[str] (default None)
         The file formats that are generated from simulation outputs. None or an
         empty tuple means all formats are generated. The stem of each file is
@@ -419,6 +419,7 @@ class flight(object):
             balloonModel,
             nozzleLift,
             payloadTrainWeight,
+            outputPath: str | Path,
             environment=None,
             maxFlightTime=18000,
             parachuteModel=None,
@@ -432,7 +433,6 @@ class flight(object):
             cutdown=False,
             cutdownAltitude=numpy.inf,
             cutdownTimeout=numpy.inf,
-            outputPath: str | Path = '',
             outputFormats: tuple[str] | None=None,
             debugging=False,
             log_to_file=False,
