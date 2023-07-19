@@ -67,6 +67,7 @@ def get_urldict_async(urls_dict, hooks_dict=None):
         results = {}
         for future in as_completed(futures):
             resp = future.result()
+            resp.raise_for_status()
             unquoted_url = urllib.parse.unquote(resp.url)
             results[unquoted_url] = resp.text
     if any(result[0] == "<" for result in results.values()):
