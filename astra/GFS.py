@@ -38,6 +38,10 @@ try:
 except AttributeError:
     def profile(func):
         return func
+    
+
+class GFSCycleNotFoundError(RuntimeError):
+    pass
 
 
 def get_urldict_async(urls_dict, hooks_dict=None):
@@ -735,7 +739,7 @@ class GFS_Handler(object):
             thisCycle, requestTimeSlice, progressHandler)
 
         if not (data_matrices and data_maps):
-            raise RuntimeError('No available GFS cycles found!')
+            raise GFSCycleNotFoundError('No available GFS cycles found!')
         return data_matrices, data_maps
 
     @profile
@@ -791,8 +795,21 @@ class GFS_Handler(object):
                                        cycleStartHour,
                                        tzinfo=currentDateTime.tzinfo)
 
-        data_matrices, data_maps = self.getNOAAData(simulationDateTime,
-            latestCycleDateTime, progressHandler)
+        attempts_remaining = 3
+        while True:
+            attempts_remaining -= 1
+            try:
+                data_matrices, data_maps = self.getNOAAData(simulationDateTime,
+                    latestCycleDateTime, progressHandler)
+            except GFSCycleNotFoundError:
+                if attempts_remaining > 0:
+                    logger.debug('No GFS cycle found. Retrying...')
+                else:
+                    logger.debug('No GFS cycle found. No retries remaining.')
+                    raise
+            else:
+                break
+        
 
 #######################################################################
         # PROCESS DATA AND PERFORM CONVERSIONS AS REQUIRED
