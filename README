@@ -6,10 +6,11 @@ This README file explains how to use the ASTRA High Altitude Balloon Flight Plan
 
 See the included examples and notebooks for usage.
 
+Tests can be run with `pytest`. Running examples (examples/run_all_examples.py) is an additional way to test functionality.
+
 Distribution
 ------------
-This module has been tested on python 2.7 and 3.6
-Use of the Anaconda Python distribution is recommended.
+Has been tested with Python 3.11.3 and pip installation of requirements.txt as of commit https://github.com/jparta/astra_simulator/commit/5d60dc60fef0e99b6cab9bab0dca524cf4886fdc
 
 
 Copyright 2013, University of Southampton.
